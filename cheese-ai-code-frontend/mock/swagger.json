@@ -1,0 +1,75 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "奶酪AI代码平台 API",
+    "version": "1.0.0",
+    "description": "奶酪AI代码平台后端接口文档"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8123/api",
+      "description": "开发环境"
+    }
+  ],
+  "tags": [
+    {
+      "name": "健康检查",
+      "description": "Health Check Controller"
+    },
+    {
+      "name": "用户管理", 
+      "description": "User Controller"
+    },
+    {
+      "name": "AI服务",
+      "description": "AI Service Controller"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["健康检查"],
+        "operationId": "healthCheck",
+        "summary": "健康检查",
+        "description": "检查服务健康状态",
+        "responses": {
+          "200": {
+            "description": "服务正常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BaseResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "description": "状态码"
+          },
+          "message": {
+            "type": "string",
+            "description": "消息"
+          },
+          "data": {
+            "type": "object",
+            "description": "数据"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "是否成功"
+          }
+        }
+      }
+    }
+  }
+}
