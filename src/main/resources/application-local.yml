@@ -1,12 +1,26 @@
-# AI
+# AI模型配置
 langchain4j:
   open-ai:
+    # 普通聊天模型配置
     chat-model:
       base-url: https://api.deepseek.com
       api-key: REDACTED_API_KEY
       model-name: deepseek-chat
       max-tokens: 8192
-      log-requests: true
-      log-responses: true
+      # 支持结构化输出
       strict-json-schema: true
       response-format: json_object
+      log-requests: true
+      log-responses: true
+
+    # 流式聊天模型配置
+    streaming-chat-model:
+      base-url: https://api.deepseek.com
+      api-key: REDACTED_API_KEY
+      model-name: deepseek-chat
+      max-tokens: 8192
+      # 流式响应不支持结构化输出
+      # strict-json-schema: true
+      # response-format: json_object
+      log-requests: true
+      log-responses: true
