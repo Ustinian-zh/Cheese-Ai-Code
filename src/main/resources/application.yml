@@ -7,6 +7,9 @@ spring:
     url: jdbc:mysql://localhost:3306/cheese_ai_code
     username: root
     password: 5201314WZH
+ #主配置文件中激活本地配置
+  profiles:
+    active: local
 server:
   port: 8123
   servlet:

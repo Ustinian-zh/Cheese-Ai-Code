@@ -1,0 +1,6 @@
+[33mfe439ae[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m 前端用户管理模块样式优化完成
+[33ma879f1a[m 前端用户管理模块逻辑完成
+[33m1cea8ea[m 后端用户管理模块完成
+[33m1664507[m 浅浅提交一下，常规提交，国际化什么的
+[33m9aa12dd[m 项目初始化初步完成
+[33ma051855[m 后端初始化 1.lombok注解版本号注意一下。会出现get方法异常。踩坑 2.添加了doc的测试依赖，切面编程的依赖等 3.稍微整理一下目录结构，删了两个文件夹 4.统一响应格式（BaseResponse + ResultUtils）   统一异常处理（BusinessException + GlobalExceptionHandler）   常用请求类（DeleteRequest + PageRequest）   跨域支持（CorsConfig）   便捷工具（ThrowUtils）简化异常   健康监控（HealthController）
