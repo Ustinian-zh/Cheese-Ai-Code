@@ -1,17 +1,48 @@
-import { ref, computed } from 'vue'
+import { ref, computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { routeConfigs, generateMenuItems } from '@/config/routes'
-import type { MenuItem } from '@/types'
+import { HomeOutlined } from '@ant-design/icons-vue'
+import { useLoginUserStore } from '@/stores/loginUser'
+import type { MenuProps } from 'ant-design-vue'
 
 export function useMenu() {
   const router = useRouter()
   const route = useRoute()
+  const loginUserStore = useLoginUserStore()
 
   // 当前选中的菜单项
-  const selectedKeys = ref<string[]>([route.name as string || 'home'])
+  const selectedKeys = ref<string[]>([route.name as string || '主页'])
 
-  // 从路由配置生成菜单项
-  const menuItems = computed(() => generateMenuItems(routeConfigs))
+  // 菜单配置项
+  const originItems = [
+    {
+      key: '主页',
+      icon: () => h(HomeOutlined),
+      label: '主页',
+      title: '主页',
+    },
+    {
+      key: '用户管理',
+      label: '用户管理',
+      title: '用户管理',
+    },
+  ]
+
+  // 过滤菜单项
+  const filterMenus = (menus = [] as MenuProps['items']) => {
+    return menus?.filter((menu) => {
+      const menuKey = menu?.key as string
+      if (menuKey === '用户管理') {
+        const loginUser = loginUserStore.loginUser
+        if (!loginUser || loginUser.userRole !== 'admin') {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  // 展示在菜单的路由数组
+  const menuItems = computed<MenuProps['items']>(() => filterMenus(originItems))
 
   // 菜单点击处理
   const handleMenuClick = ({ key }: { key: string }) => {
@@ -32,8 +63,7 @@ export function useMenu() {
 
   // 获取当前页面标题
   const getCurrentPageTitle = computed(() => {
-    const currentRoute = routeConfigs.find(config => config.name === route.name)
-    return currentRoute?.meta.title || '奶酪AI代码平台'
+    return route.name as string || '奶酪AI代码平台'
   })
 
   return {
