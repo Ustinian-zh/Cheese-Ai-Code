@@ -17,18 +17,26 @@
       />
 
       <!-- 右侧用户区域 -->
-      <div class="user-section">
-        <a-button
-          type="text"
-          class="locale-btn"
-          @click="toggleLocale"
-          :title="isZhCN ? '切换到英文' : 'Switch to Chinese'"
-        >
-          {{ isZhCN ? 'EN' : '中' }}
-        </a-button>
-        <a-button type="primary" class="login-btn" @click="handleLogin">
-          {{ isZhCN ? '登录' : 'Login' }}
-        </a-button>
+      <div class="user-login-status">
+        <div v-if="loginUserStore.loginUser.id">
+          <a-dropdown>
+            <a-space>
+              <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+              {{ loginUserStore.loginUser.userName ?? '无名' }}
+            </a-space>
+            <template #overlay>
+              <a-menu>
+                <a-menu-item @click="doLogout">
+                  <LogoutOutlined />
+                  退出登录
+                </a-menu-item>
+              </a-menu>
+            </template>
+          </a-dropdown>
+        </div>
+        <div v-else>
+          <a-button type="primary" @click="goToLogin">登录</a-button>
+        </div>
       </div>
     </div>
   </a-layout-header>
@@ -36,18 +44,35 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
+import { LogoutOutlined } from '@ant-design/icons-vue'
 import { useMenu } from '@/composables/useMenu'
-import { useLocale } from '@/composables/useLocale'
+import { useLoginUserStore } from '@/stores/loginUser.ts'
+import { userLogout } from '@/api/userController.ts'
 
 const route = useRoute()
+const router = useRouter()
+const loginUserStore = useLoginUserStore()
 const { menuItems, selectedKeys, handleMenuClick, updateSelectedKeys } = useMenu()
-const { isZhCN, toggleLocale } = useLocale()
 
-// 登录按钮处理
-const handleLogin = () => {
-  console.log('点击登录按钮')
-  // 这里可以添加登录逻辑
+// 跳转到登录页
+const goToLogin = () => {
+  router.push('/user/login')
+}
+
+// 用户注销
+const doLogout = async () => {
+  const res = await userLogout()
+  if (res.data.code === 0) {
+    loginUserStore.setLoginUser({
+      userName: '未登录',
+    })
+    message.success('退出登录成功')
+    await router.push('/user/login')
+  } else {
+    message.error('退出登录失败，' + res.data.message)
+  }
 }
 
 // 组件挂载时更新选中状态
@@ -88,6 +113,7 @@ watch(() => route.name, () => {
   align-items: center;
   gap: 12px;
   min-width: 200px;
+  height: 64px; /* 确保与header高度一致 */
 }
 
 .logo {
@@ -113,6 +139,9 @@ watch(() => route.name, () => {
   letter-spacing: 0.8px;
   font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   text-shadow: 0 2px 4px rgba(255, 140, 66, 0.2);
+  line-height: 1.2; /* 确保文字行高与logo对齐 */
+  display: flex;
+  align-items: center;
 }
 
 .main-menu {
@@ -154,7 +183,7 @@ watch(() => route.name, () => {
   transition: all 0.3s ease;
 }
 
-.user-section {
+.user-login-status {
   min-width: 140px;
   display: flex;
   align-items: center;
@@ -162,40 +191,29 @@ watch(() => route.name, () => {
   justify-content: flex-end;
 }
 
-.login-btn {
+/* 优化右上角登录按钮 */
+.user-login-status :deep(.ant-btn-primary) {
+  height: 40px;
+  border-radius: 20px;
   background: linear-gradient(135deg, #ff8c42 0%, #ffa726 100%);
   border: none;
-  border-radius: 20px;
+  font-size: 14px;
   font-weight: 600;
   padding: 0 20px;
-  height: 36px;
   box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
   transition: all 0.3s ease;
   font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-.locale-btn {
-  color: #64748b;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 4px 8px;
-  height: 32px;
-  min-width: 36px;
-}
-
-.locale-btn:hover {
-  color: #ff8c42;
-  border-color: rgba(255, 140, 66, 0.2);
-  background: rgba(255, 140, 66, 0.05);
-}
-
-.login-btn:hover {
+.user-login-status :deep(.ant-btn-primary:hover) {
   background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.user-login-status :deep(.ant-btn-primary:active) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 /* 响应式设计 */

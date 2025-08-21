@@ -2,13 +2,9 @@
 import { ConfigProvider } from 'ant-design-vue'
 import BasicLayout from '@/layouts/BasicLayout.vue'
 import { useLocale } from '@/composables/useLocale'
-import { setGlobalLocale, getCurrentLocale } from '@/config/locale'
 
 // 初始化国际化
 const { antdLocale } = useLocale()
-
-// 设置初始语言
-setGlobalLocale(getCurrentLocale())
 </script>
 
 <template>
