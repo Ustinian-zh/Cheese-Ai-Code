@@ -1,6 +1,12 @@
 spring:
   application:
     name: cheese-ai-code-backend
+  # mysql数据库配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/cheese_ai_code
+    username: root
+    password: 5201314WZH
 server:
   port: 8123
   servlet:
