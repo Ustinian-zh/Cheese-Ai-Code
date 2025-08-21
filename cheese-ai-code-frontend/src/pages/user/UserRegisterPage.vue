@@ -75,6 +75,7 @@ const handleSubmit = async (values: API.UserRegisterRequest) => {
 #userRegisterPage {
   max-width: 360px;
   margin: 0 auto;
+  padding: 60px 0;
 }
 
 .title {
@@ -94,4 +95,52 @@ const handleSubmit = async (values: API.UserRegisterRequest) => {
   font-size: 13px;
   text-align: right;
 }
+
+/* 按钮样式调整为橙色主题，参考右上角登录按钮 */
+#userRegisterPage :deep(.ant-btn-primary) {
+  height: 44px !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #ff8c42 0%, #ffa726 100%) !important;
+  border: none !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3) !important;
+  transition: all 0.3s ease !important;
+  font-family: 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+#userRegisterPage :deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4) !important;
+}
+
+#userRegisterPage :deep(.ant-btn-primary:active) {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3) !important;
+}
+
+/* 移除浏览器自动填充的黄色背景 */
+#userRegisterPage :deep(.ant-input:-webkit-autofill),
+#userRegisterPage :deep(.ant-input:-webkit-autofill:hover),
+#userRegisterPage :deep(.ant-input:-webkit-autofill:focus),
+#userRegisterPage :deep(.ant-input:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+  box-shadow: 0 0 0 30px #fff inset !important;
+  -webkit-text-fill-color: #000 !important;
+  background-color: #fff !important;
+  background-image: none !important;
+}
+
+#userRegisterPage :deep(.ant-input-password .ant-input:-webkit-autofill),
+#userRegisterPage :deep(.ant-input-password .ant-input:-webkit-autofill:hover),
+#userRegisterPage :deep(.ant-input-password .ant-input:-webkit-autofill:focus),
+#userRegisterPage :deep(.ant-input-password .ant-input:-webkit-autofill:active) {
+  -webkit-box-shadow: 0 0 0 30px #fff inset !important;
+  box-shadow: 0 0 0 30px #fff inset !important;
+  -webkit-text-fill-color: #000 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 </style>
