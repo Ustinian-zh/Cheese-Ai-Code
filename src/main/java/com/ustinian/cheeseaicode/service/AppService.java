@@ -4,7 +4,9 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.ustinian.cheeseaicode.model.dto.app.AppQueryRequest;
 import com.ustinian.cheeseaicode.model.entity.App;
+import com.ustinian.cheeseaicode.model.entity.User;
 import com.ustinian.cheeseaicode.model.vo.AppVO;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -34,4 +36,13 @@ public interface AppService extends IService<App> {
      * @return
      */
     List<AppVO> getAppVOList(List<App> appList);
+
+    /**
+     * chatToGenCode 方‌法，调用门面生成代‍码,前后端交互唯一
+     * @param appId
+     * @param message
+     * @param loginUser
+     * @return
+     */
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 }
