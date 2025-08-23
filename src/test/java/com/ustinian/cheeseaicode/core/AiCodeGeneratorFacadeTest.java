@@ -15,19 +15,15 @@ class AiCodeGeneratorFacadeTest {
 
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
-
     @Test
     void generateAndSaveCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("任务记录网站，不超过20行代码", CodeGenTypeEnum.MULTI_FILE);
+        File file = aiCodeGeneratorFacade.generateAndSaveCode("任务记录网站,不超过50行代码", CodeGenTypeEnum.MULTI_FILE, 1L);
         Assertions.assertNotNull(file);
     }
 
-    /**
-     * 测试流式输出
-     */
     @Test
     void generateAndSaveCodeStream() {
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("任务记录网站,不超过20行", CodeGenTypeEnum.MULTI_FILE);
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("任务记录网站，不超过50行代码", CodeGenTypeEnum.MULTI_FILE, 1L);
         // 阻塞等待所有数据收集完成
         List<String> result = codeStream.collectList().block();
         // 验证结果
@@ -36,4 +32,25 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertNotNull(completeContent);
     }
 
+//region 旧测试方法
+//    @Test
+//    void generateAndSaveCode() {
+//        File file = aiCodeGeneratorFacade.generateAndSaveCode("任务记录网站，不超过20行代码", CodeGenTypeEnum.MULTI_FILE);
+//        Assertions.assertNotNull(file);
+//    }
+//
+//    /**
+//     * 测试流式输出
+//     */
+//    @Test
+//    void generateAndSaveCodeStream() {
+//        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream("任务记录网站,不超过20行", CodeGenTypeEnum.MULTI_FILE);
+//        // 阻塞等待所有数据收集完成
+//        List<String> result = codeStream.collectList().block();
+//        // 验证结果
+//        Assertions.assertNotNull(result);
+//        String completeContent = String.join("", result);
+//        Assertions.assertNotNull(completeContent);
+//    }
+//endregion
 }
