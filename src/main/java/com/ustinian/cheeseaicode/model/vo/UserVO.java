@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 
 @Data
 public class UserVO implements Serializable {
-
     /**
      * id
      */
