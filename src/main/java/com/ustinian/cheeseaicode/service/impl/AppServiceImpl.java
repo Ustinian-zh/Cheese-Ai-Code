@@ -1,10 +1,23 @@
 package com.ustinian.cheeseaicode.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import com.ustinian.cheeseaicode.model.entity.App;
+import com.ustinian.cheeseaicode.exception.BusinessException;
+import com.ustinian.cheeseaicode.exception.ErrorCode;
 import com.ustinian.cheeseaicode.mapper.AppMapper;
+import com.ustinian.cheeseaicode.model.dto.app.AppQueryRequest;
+import com.ustinian.cheeseaicode.model.entity.App;
+import com.ustinian.cheeseaicode.model.entity.User;
+import com.ustinian.cheeseaicode.model.vo.AppVO;
+import com.ustinian.cheeseaicode.model.vo.UserVO;
 import com.ustinian.cheeseaicode.service.AppService;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 应用 服务层实现。
@@ -13,5 +26,89 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
+    @Resource
+    private UserServiceImpl userService;
+
+    /**
+     * 实现获取应用详情加密后，逻辑为先详细后封装
+     * @param app
+     * @return
+     */
+    @Override
+    public AppVO getAppVO(App app) {
+        if (app == null) {
+            return null;
+        }
+        AppVO appVO = new AppVO();
+        BeanUtil.copyProperties(app, appVO);
+        // 关联查询用户信息
+        Long userId = app.getUserId();
+        if (userId != null) {
+            User user = userService.getById(userId);
+            UserVO userVO = userService.getUserVO(user);
+            appVO.setUser(userVO);
+        }
+        return appVO;
+    }
+
+    /**
+     * 构造查询单个对象的方法
+     * @param appQueryRequest 请求参数
+     * @return 查询对象
+     */
+    @Override
+    public QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest) {
+        if (appQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        Long id = appQueryRequest.getId();
+        String appName = appQueryRequest.getAppName();
+        String cover = appQueryRequest.getCover();
+        String initPrompt = appQueryRequest.getInitPrompt();
+        String codeGenType = appQueryRequest.getCodeGenType();
+        String deployKey = appQueryRequest.getDeployKey();
+        Integer priority = appQueryRequest.getPriority();
+        Long userId = appQueryRequest.getUserId();
+        String sortField = appQueryRequest.getSortField();
+        String sortOrder = appQueryRequest.getSortOrder();
+        return QueryWrapper.create()
+                .eq("id", id)
+                .like("appName", appName)
+                .like("cover", cover)
+                .like("initPrompt", initPrompt)
+                .eq("codeGenType", codeGenType)
+                .eq("deployKey", deployKey)
+                .eq("priority", priority)
+                .eq("userId", userId)
+                .orderBy(sortField, "ascend".equals(sortOrder));
+    }
+
+    /**
+     *  批量获取应用详情
+     * @param appList 应用列表
+     * @return 应用详情列表
+     */
+    @Override
+    public List<AppVO> getAppVOList(List<App> appList) {
+        if (CollUtil.isEmpty(appList)) {
+            return new ArrayList<>();
+        }
+        // 批量获取用户信息，避免 N+1 查询问题
+        Set<Long> userIds = appList.stream()
+                //应该是set自动去重的
+                .map(App::getUserId)
+                .collect(Collectors.toSet());
+        Map<Long, UserVO> userVOMap = userService.listByIds(userIds).stream()
+                //如果遇到相同的id，合并一下用一个，否则会异常
+                .collect(Collectors.toMap(User::getId, userService::getUserVO));
+        return appList.stream().map(app -> {
+            AppVO appVO = getAppVO(app);
+            UserVO userVO = userVOMap.get(app.getUserId());
+            appVO.setUser(userVO);
+            return appVO;
+        }).collect(Collectors.toList());
+    }
+
+
 
 }
