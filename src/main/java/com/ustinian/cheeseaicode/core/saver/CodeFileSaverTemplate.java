@@ -2,6 +2,7 @@ package com.ustinian.cheeseaicode.core.saver;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
+import com.ustinian.cheeseaicode.constant.AppConstant;
 import com.ustinian.cheeseaicode.exception.BusinessException;
 import com.ustinian.cheeseaicode.exception.ErrorCode;
 import com.ustinian.cheeseaicode.model.enums.CodeGenTypeEnum;
@@ -18,7 +19,7 @@ public abstract class CodeFileSaverTemplate<T> {
 
 
     // 文件保存根目录
-    protected static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    protected static final String FILE_SAVE_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
     //region 在5变成根据appid 生成唯一目录
     /**
