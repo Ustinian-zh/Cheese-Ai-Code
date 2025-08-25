@@ -1,10 +1,10 @@
 // @ts-ignore
 /* eslint-disable */
-import request from '@/request'
+import request from '@/utils/request'
 
 /** 此处后端没有提供注释 POST /user/add */
 export async function addUser(body: API.UserAddRequest, options?: { [key: string]: any }) {
-  return request<API.BaseResponseLong>(`/api/user/add`, {
+  return request<API.BaseResponseLong>(`${api / generated}/user/add`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -16,7 +16,7 @@ export async function addUser(body: API.UserAddRequest, options?: { [key: string
 
 /** 此处后端没有提供注释 POST /user/delete */
 export async function deleteUser(body: API.DeleteRequest, options?: { [key: string]: any }) {
-  return request<API.BaseResponseBoolean>(`/api/user/delete`, {
+  return request<API.BaseResponseBoolean>(`${api / generated}/user/delete`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ export async function getUserById(
   params: API.getUserByIdParams,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponseUser>(`/api/user/get`, {
+  return request<API.BaseResponseUser>(`${api / generated}/user/get`, {
     method: 'GET',
     params: {
       ...params,
@@ -43,7 +43,7 @@ export async function getUserById(
 
 /** 此处后端没有提供注释 GET /user/get/login */
 export async function getLoginUser(options?: { [key: string]: any }) {
-  return request<API.BaseResponseLoginUserVO>(`/api/user/get/login`, {
+  return request<API.BaseResponseLoginUserVO>(`${api / generated}/user/get/login`, {
     method: 'GET',
     ...(options || {}),
   })
@@ -55,7 +55,7 @@ export async function getUserVoById(
   params: API.getUserVOByIdParams,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponseUserVO>(`/api/user/get/vo`, {
+  return request<API.BaseResponseUserVO>(`${api / generated}/user/get/vo`, {
     method: 'GET',
     params: {
       ...params,
@@ -69,7 +69,7 @@ export async function listUserVoByPage(
   body: API.UserQueryRequest,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponsePageUserVO>(`/api/user/list/page/vo`, {
+  return request<API.BaseResponsePageUserVO>(`${api / generated}/user/list/page/vo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ export async function listUserVoByPage(
 
 /** 此处后端没有提供注释 POST /user/login */
 export async function userLogin(body: API.UserLoginRequest, options?: { [key: string]: any }) {
-  return request<API.BaseResponseLoginUserVO>(`/api/user/login`, {
+  return request<API.BaseResponseLoginUserVO>(`${api / generated}/user/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -93,7 +93,7 @@ export async function userLogin(body: API.UserLoginRequest, options?: { [key: st
 
 /** 此处后端没有提供注释 POST /user/logout */
 export async function userLogout(options?: { [key: string]: any }) {
-  return request<API.BaseResponseBoolean>(`/api/user/logout`, {
+  return request<API.BaseResponseBoolean>(`${api / generated}/user/logout`, {
     method: 'POST',
     ...(options || {}),
   })
@@ -104,7 +104,7 @@ export async function userRegister(
   body: API.UserRegisterRequest,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponseLong>(`/api/user/register`, {
+  return request<API.BaseResponseLong>(`${api / generated}/user/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ export async function userRegister(
 
 /** 此处后端没有提供注释 POST /user/update */
 export async function updateUser(body: API.UserUpdateRequest, options?: { [key: string]: any }) {
-  return request<API.BaseResponseBoolean>(`/api/user/update`, {
+  return request<API.BaseResponseBoolean>(`${api / generated}/user/update`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

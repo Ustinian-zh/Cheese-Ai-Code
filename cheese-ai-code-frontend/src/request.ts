@@ -1,12 +1,28 @@
 import axios from 'axios'
+import JSONBig from 'json-bigint'
 import { message } from 'ant-design-vue'
+import { API_BASE_URL } from '@/config/env'
 
 // 创建 Axios 实例
 const myAxios = axios.create({
-  baseURL: 'http://localhost:8123/api',
+  baseURL: API_BASE_URL,
   timeout: 60000,
   withCredentials: true,
 })
+
+// 使用 json-bigint 解析，避免后端返回 JSON 中的大整型被精度截断（如 id）
+myAxios.defaults.transformResponse = [
+  function (data) {
+    try {
+      // 后端可能返回空字符串/非 JSON
+      if (!data || typeof data !== 'string') return data
+      const json = JSONBig({ storeAsString: true })
+      return json.parse(data)
+    } catch (e) {
+      return data
+    }
+  },
+]
 
 // 全局请求拦截器
 myAxios.interceptors.request.use(
