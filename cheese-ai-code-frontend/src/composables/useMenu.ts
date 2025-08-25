@@ -21,9 +21,19 @@ export function useMenu() {
       title: '主页',
     },
     {
+      key: '应用广场',
+      label: '应用广场',
+      title: '应用广场',
+    },
+    {
       key: '用户管理',
       label: '用户管理',
       title: '用户管理',
+    },
+    {
+      key: '应用管理',
+      label: '应用管理',
+      title: '应用管理',
     },
   ]
 
@@ -31,7 +41,7 @@ export function useMenu() {
   const filterMenus = (menus = [] as MenuProps['items']) => {
     return menus?.filter((menu) => {
       const menuKey = menu?.key as string
-      if (menuKey === '用户管理') {
+      if (menuKey === '用户管理' || menuKey === '应用管理') {
         const loginUser = loginUserStore.loginUser
         if (!loginUser || loginUser.userRole !== 'admin') {
           return false
@@ -48,7 +58,7 @@ export function useMenu() {
   const handleMenuClick = ({ key }: { key: string }) => {
     selectedKeys.value = [key]
 
-    // 根据key导航到对应路由
+    // 根据 key 导航到对应路由
     router.push({ name: key }).catch(err => {
       console.warn('路由导航失败:', err)
     })
