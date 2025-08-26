@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
+import { normalizeCodeGenType } from '@/utils/codeGenTypes'
 import { getDeployUrl } from '@/config/env'
 import AppCard from '@/components/AppCard.vue'
 
@@ -69,6 +70,8 @@ const loadMyApps = async () => {
   if (res.data.code === 0 && res.data.data) {
     myApps.value = res.data.data.records || []
     myAppsPage.total = res.data.data.totalRow || 0
+    // 规范化展示（防止后端返回大小写/下划线不一致导致展示错乱）
+    myApps.value.forEach(app => { (app as any).codeGenType = normalizeCodeGenType(app.codeGenType as any) })
   }
 }
 
@@ -82,6 +85,7 @@ const loadFeaturedApps = async () => {
   if (res.data.code === 0 && res.data.data) {
     featuredApps.value = res.data.data.records || []
     featuredAppsPage.total = res.data.data.totalRow || 0
+    featuredApps.value.forEach(app => { (app as any).codeGenType = normalizeCodeGenType(app.codeGenType as any) })
   }
 }
 

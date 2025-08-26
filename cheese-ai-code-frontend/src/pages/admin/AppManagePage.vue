@@ -9,7 +9,7 @@
       </a-form-item>
       <a-form-item label="生成类型">
         <a-select v-model:value="searchParams.codeGenType" placeholder="选择生成类型" style="width: 150px">
-          <a-select-option value="">全部</a-select-option>
+          <a-select-option :value="undefined">全部</a-select-option>
           <a-select-option v-for="option in CODE_GEN_TYPE_OPTIONS" :key="option.value" :value="option.value">
             {{ option.label }}
           </a-select-option>
@@ -70,7 +70,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { listAppVoByPageByAdmin, deleteAppByAdmin, updateAppByAdmin } from '@/api/appController'
-import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType } from '@/utils/codeGenTypes'
+import { CODE_GEN_TYPE_OPTIONS, formatCodeGenType, normalizeCodeGenType } from '@/utils/codeGenTypes'
 import { formatTime } from '@/utils/time'
 import UserInfo from '@/components/UserInfo.vue'
 
@@ -96,7 +96,14 @@ const searchParams = reactive<API.AppQueryRequest>({ pageNum: 1, pageSize: 10 })
 
 const fetchData = async () => {
   try {
-    const res = await listAppVoByPageByAdmin({ ...searchParams })
+    const req: API.AppQueryRequest = { ...searchParams }
+    // 规范化并且“全部”不传 codeGenType 字段
+    if (req.codeGenType !== undefined && req.codeGenType !== null && String(req.codeGenType).trim() !== '') {
+      req.codeGenType = normalizeCodeGenType(req.codeGenType as unknown as string)
+    } else {
+      delete (req as any).codeGenType
+    }
+    const res = await listAppVoByPageByAdmin(req)
     if (res.data.data) {
       data.value = res.data.data.records ?? []
       total.value = res.data.data.totalRow ?? 0

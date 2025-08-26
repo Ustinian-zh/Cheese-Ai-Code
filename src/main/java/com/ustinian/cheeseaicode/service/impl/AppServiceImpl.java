@@ -16,15 +16,18 @@ import com.ustinian.cheeseaicode.mapper.AppMapper;
 import com.ustinian.cheeseaicode.model.dto.app.AppQueryRequest;
 import com.ustinian.cheeseaicode.model.entity.App;
 import com.ustinian.cheeseaicode.model.entity.User;
+import com.ustinian.cheeseaicode.model.enums.ChatHistoryMessageTypeEnum;
 import com.ustinian.cheeseaicode.model.enums.CodeGenTypeEnum;
 import com.ustinian.cheeseaicode.model.vo.AppVO;
 import com.ustinian.cheeseaicode.model.vo.UserVO;
 import com.ustinian.cheeseaicode.service.AppService;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,11 +41,14 @@ import java.util.stream.Collectors;
  * @author <a href="https://github.com/Ustinian-zh">Ustinian-zh</a>
  */
 @Service
+@Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService{
     @Resource
     private UserServiceImpl userService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+    @Resource
+    private ChatHistoryServiceImpl chatHistoryService;
 
     /**
      * 实现获取应用详情加密后，逻辑为先详细后封装
@@ -143,15 +149,57 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
-        // 4. 获取应用的代码生成类型
-        String codeGenTypeStr = app.getCodeGenType();
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
-        if (codeGenTypeEnum == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
+//        // 4. 获取应用的代码生成类型
+//        String codeGenTypeStr = app.getCodeGenType();
+//        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
+//        if (codeGenTypeEnum == null) {
+//            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
+//        }
+//        // 5. 调用 AI 生成代码
+//        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+// 4. 决定本次生成应使用的代码生成类型（支持从用户消息中识别“单 HTML / 多文件”意图）
+        CodeGenTypeEnum currentEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
+        if (currentEnum == null) {
+            currentEnum = CodeGenTypeEnum.MULTI_FILE; // 安全兜底
         }
-        // 5. 调用 AI 生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-    }
+        CodeGenTypeEnum decidedEnum = decideCodeGenTypeFromMessage(message, currentEnum);
+
+// 若识别的类型与数据库不一致，回写数据库，确保后续展示 / 部署一致
+        if (!decidedEnum.getValue().equals(app.getCodeGenType())) {
+            App update = new App();
+            update.setId(appId);
+            update.setCodeGenType(decidedEnum.getValue());
+            update.setEditTime(LocalDateTime.now());
+            boolean updated = this.updateById(update);
+            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用生成类型失败");
+        }
+
+// 5. 通过校验后，添加用户消息到对话历史
+        chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+
+// 6. 按决定的生成类型调用 AI 生成代码（流式）
+        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, decidedEnum, appId);
+
+// 7. 收集AI响应内容并在完成后记录到对话历史
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        return contentFlux
+                .map(chunk -> {
+                    // 收集AI响应内容
+                    aiResponseBuilder.append(chunk);
+                    return chunk;
+                })
+                .doOnComplete(() -> {
+                    // 流式响应完成后，添加AI消息到对话历史
+                    String aiResponse = aiResponseBuilder.toString();
+                    if (StrUtil.isNotBlank(aiResponse)) {
+                        chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    }
+                })
+                .doOnError(error -> {
+                    // 如果AI回复失败，也要记录错误消息
+                    String errorMessage = "AI回复失败: " + error.getMessage();
+                    chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                }); }
 
     /**
      * 网站应用部署
@@ -206,6 +254,53 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         return String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
     }
 
-
+    /**
+     * 根据用户输入的自然语言判定生成类型。
+     * - 命中“单 html / 单页 / 单文件”等关键词 → HTML
+     * - 命中“多文件 / 多页 / 组件 / 目录结构”等关键词 → MULTI_FILE
+     * - 否则沿用当前类型
+     */
+    private CodeGenTypeEnum decideCodeGenTypeFromMessage(String userMessage, CodeGenTypeEnum current) {
+        if (StrUtil.isBlank(userMessage)) {
+            return current;
+        }
+        String msg = userMessage.toLowerCase();
+        String alnum = msg.replaceAll("[^a-z0-9\\u4e00-\\u9fa5]", "");
+        boolean wantHtml = alnum.contains("html") || alnum.contains("单html") || alnum.contains("单页") || alnum.contains("单文件");
+        boolean wantMulti = alnum.contains("多文件") || alnum.contains("多页") || alnum.contains("组件化") || alnum.contains("目录结构");
+        if (wantHtml && !wantMulti) {
+            return CodeGenTypeEnum.HTML;
+        }
+        if (wantMulti && !wantHtml) {
+            return CodeGenTypeEnum.MULTI_FILE;
+        }
+        return current;
+    }
+    /**
+     * 删除应用时关联删除对话历史
+     *重写removebyid
+     * @param id 应用ID
+     * @return 是否成功
+     */
+    @Override
+    public boolean removeById(Serializable id) {
+        if (id == null) {
+            return false;
+        }
+        // 转换为 Long 类型
+        Long appId = Long.valueOf(id.toString());
+        if (appId <= 0) {
+            return false;
+        }
+        // 先删除关联的对话历史
+        try {
+            chatHistoryService.deleteByAppId(appId);
+        } catch (Exception e) {
+            // 记录日志但不阻止应用删除
+            log.error("删除应用关联对话历史失败: {}", e.getMessage());
+        }
+        // 删除应用
+        return super.removeById(id);
+    }
 
 }

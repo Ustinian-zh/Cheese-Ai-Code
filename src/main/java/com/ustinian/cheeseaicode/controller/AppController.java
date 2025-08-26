@@ -69,6 +69,10 @@ public class AppController {
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
         // 暂时设置为多文件生成
+        /**
+         * 自行改动
+         */
+        // 默认生成类型：多文件。后续会在首次生成时根据用户意图自动更新为 "html" 或 "multi_file"。
         app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
         // 插入数据库
         boolean result = appService.save(app);
