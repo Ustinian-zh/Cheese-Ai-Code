@@ -35,13 +35,18 @@ export function useMenu() {
       label: '应用管理',
       title: '应用管理',
     },
+    {
+      key: '对话管理',
+      label: '对话管理',
+      title: '对话管理',
+    },
   ]
 
   // 过滤菜单项
   const filterMenus = (menus = [] as MenuProps['items']) => {
     return menus?.filter((menu) => {
       const menuKey = menu?.key as string
-      if (menuKey === '用户管理' || menuKey === '应用管理') {
+      if (menuKey === '用户管理' || menuKey === '应用管理' || menuKey === '对话管理') {
         const loginUser = loginUserStore.loginUser
         if (!loginUser || loginUser.userRole !== 'admin') {
           return false

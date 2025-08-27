@@ -13,6 +13,9 @@
     <div class="main-content">
       <div class="chat-section">
         <div class="messages-container" ref="messagesContainer">
+          <div v-if="hasMoreHistory" class="load-more-container">
+            <a-button type="link" @click="loadMoreHistory" :loading="loadingHistory" size="small">加载更多历史消息</a-button>
+          </div>
           <div v-for="(message, index) in messages" :key="index" class="message-item">
             <div v-if="message.type === 'user'" class="user-message">
               <div class="message-content">{{ message.content }}</div>
@@ -83,7 +86,7 @@
       @delete="deleteApp"
     />
 
-    <DeploySuccessModal v-model:open="deployModalVisible" :deploy-url="deployUrl" @open-site="openDeployedSite" />
+    <DeploySuccessModal v-model:open="deployModalVisible" :deploy-url="deployUrl" />
   </div>
 </template>
 
@@ -93,6 +96,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getAppVoById, deployApp as deployAppApi, deleteApp as deleteAppApi } from '@/api/appController'
+import { listAppChatHistory } from '@/api/chatHistoryController'
 import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
 import request from '@/request'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
@@ -116,8 +120,12 @@ interface Message {
 const messages = ref<Message[]>([])
 const userInput = ref('')
 const isGenerating = ref(false)
-const messagesContainer = ref<HTMLElement>()
-const hasInitialConversation = ref(false)
+const messagesContainer = ref<HTMLElement | null>(null)
+// 对话历史游标与加载控制
+const loadingHistory = ref(false)
+const hasMoreHistory = ref(false)
+const lastCreateTime = ref<string>()
+const historyLoaded = ref(false)
 
 const previewUrl = ref('')
 const previewReady = ref(false)
@@ -144,9 +152,14 @@ const fetchAppInfo = async () => {
     const res = await getAppVoById({ id } as any)
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
-      const isViewMode = route.query.view === '1'
-      if (appInfo.value.initPrompt && !isViewMode && !hasInitialConversation.value) {
-        hasInitialConversation.value = true
+      // 先加载对话历史
+      await loadChatHistory()
+      // 如有至少 2 条对话历史，则展示网站
+      if (messages.value.length >= 2) {
+        updatePreview()
+      }
+      // 若是自己的应用且无历史，自动发送 initPrompt
+      if (appInfo.value.initPrompt && isOwner.value && messages.value.length === 0 && historyLoaded.value) {
         await sendInitialMessage(appInfo.value.initPrompt)
       }
     } else {
@@ -160,9 +173,9 @@ const fetchAppInfo = async () => {
 }
 
 const sendInitialMessage = async (prompt: string) => {
-  messages.value.push({ type: 'user', content: prompt })
+  messages.value.push({ type: 'user', content: prompt } as Message)
   const aiMessageIndex = messages.value.length
-  messages.value.push({ type: 'ai', content: '', loading: true })
+  messages.value.push({ type: 'ai', content: '', loading: true } as Message)
   await nextTick(); scrollToBottom()
   isGenerating.value = true
   await generateCode(prompt, aiMessageIndex)
@@ -172,9 +185,9 @@ const sendMessage = async () => {
   if (!userInput.value.trim() || isGenerating.value) return
   const messageText = userInput.value.trim()
   userInput.value = ''
-  messages.value.push({ type: 'user', content: messageText })
+  messages.value.push({ type: 'user', content: messageText } as Message)
   const aiMessageIndex = messages.value.length
-  messages.value.push({ type: 'ai', content: '', loading: true })
+  messages.value.push({ type: 'ai', content: '', loading: true } as Message)
   await nextTick(); scrollToBottom()
   isGenerating.value = true
   await generateCode(messageText, aiMessageIndex)
@@ -216,6 +229,10 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       if (eventSource?.readyState === EventSource.CONNECTING) {
         streamCompleted = true
         isGenerating.value = false
+        // 重要：在连接失败（浏览器保持 CONNECTING）时，显式结束卡片的“正在思考”状态，避免无限转圈
+        if (messages.value[aiMessageIndex]) {
+          messages.value[aiMessageIndex].loading = false
+        }
         eventSource?.close()
         setTimeout(async () => { await fetchAppInfo(); updatePreview() }, 800)
       } else {
@@ -225,6 +242,50 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
   } catch (error) {
     handleError(error, aiMessageIndex)
   }
+}
+
+// 加载对话历史（游标分页）
+const loadChatHistory = async (isLoadMore = false) => {
+  if (!appId.value || loadingHistory.value) return
+  loadingHistory.value = true
+  try {
+    const params: { appId: string; pageSize: number; lastCreateTime?: string } = {
+      appId: appId.value,
+      pageSize: 10,
+    }
+    if (isLoadMore && lastCreateTime.value) {
+      params.lastCreateTime = lastCreateTime.value
+    }
+    const res = await listAppChatHistory(params)
+    const pageData = res.data?.data
+    const chatHistories = pageData?.records ?? []
+    if (chatHistories.length > 0) {
+      const historyMessages: Message[] = chatHistories
+        .map((chat: any) => ({
+          type: (chat.messageType === 'user' ? 'user' : 'ai') as 'user' | 'ai',
+          content: chat.message || '',
+        }))
+        .reverse()
+      if (isLoadMore) {
+        messages.value.unshift(...historyMessages)
+      } else {
+        messages.value = historyMessages
+      }
+      lastCreateTime.value = chatHistories[chatHistories.length - 1]?.createTime
+      hasMoreHistory.value = chatHistories.length === 10
+    } else {
+      hasMoreHistory.value = false
+    }
+    historyLoaded.value = true
+  } catch (e) {
+    message.error('加载对话历史失败')
+  } finally {
+    loadingHistory.value = false
+  }
+}
+
+const loadMoreHistory = async () => {
+  await loadChatHistory(true)
 }
 
 const handleError = (error: unknown, aiMessageIndex: number) => {
@@ -285,6 +346,12 @@ onMounted(() => { fetchAppInfo() })
 onUnmounted(() => {})
 </script>
 
+<script lang="ts">
+export default {
+  methods: {},
+}
+</script>
+
 <style scoped>
 #appChatPage { height: 100%; display: flex; flex-direction: column; padding: 16px; background: #fdfdfd; }
 .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
@@ -294,6 +361,7 @@ onUnmounted(() => {})
 .main-content { flex: 1; display: flex; gap: 16px; padding: 8px; overflow: hidden; }
 .chat-section { flex: 2; display: flex; flex-direction: column; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
 .messages-container { flex: 1; padding: 16px; overflow-y: auto; scroll-behavior: smooth; }
+.load-more-container { text-align: center; padding: 8px 0; margin-bottom: 8px; }
 .message-item { margin-bottom: 12px; }
 .user-message { display: flex; justify-content: flex-end; align-items: flex-start; gap: 8px; }
 .ai-message { display: flex; justify-content: flex-start; align-items: flex-start; gap: 8px; }

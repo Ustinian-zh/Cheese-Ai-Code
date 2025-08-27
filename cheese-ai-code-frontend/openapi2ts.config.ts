@@ -1,6 +1,6 @@
 export default {
-  // 请求库路径，指向我们的request配置
-  requestLibPath: "import request from '@/utils/request'",
+  // 请求库路径，指向项目现有的 request 客户端
+  requestLibPath: "import request from '@/request'",
 
   // Swagger接口文档地址
   // 开发环境使用本地mock数据，生产环境使用实际API文档

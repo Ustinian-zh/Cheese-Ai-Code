@@ -6,6 +6,7 @@ import com.mybatisflex.core.service.IService;
 import com.ustinian.cheeseaicode.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.ustinian.cheeseaicode.model.entity.ChatHistory;
 import com.ustinian.cheeseaicode.model.entity.User;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -50,4 +51,13 @@ public interface ChatHistoryService extends IService<ChatHistory> {
     Page<ChatHistory> listAppChatHistoryByPage(Long appId, int pageSize,
                                                LocalDateTime lastCreateTime,
                                                User loginUser);
+
+    /**
+     * 从数据库中加载对话记忆
+     * @param appId
+     * @param chatMemory
+     * @param maxCount
+     * @return
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }

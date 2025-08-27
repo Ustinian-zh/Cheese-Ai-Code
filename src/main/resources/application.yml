@@ -1,6 +1,19 @@
 spring:
   application:
     name: cheese-ai-code-backend
+  # session 配置
+  session:
+    store-type: redis
+    # session 30 天过期
+    timeout: 2592000
+  # redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      ttl: 3600
+
   # mysql数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -14,6 +27,10 @@ server:
   port: 8123
   servlet:
     context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
 # springdoc-openapi
 springdoc:
   group-configs:
