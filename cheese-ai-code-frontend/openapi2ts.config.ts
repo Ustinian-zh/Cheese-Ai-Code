@@ -11,11 +11,11 @@ export default {
   // 生成代码的输出目录
   serversPath: './src',
 
-  // 生成的API文件输出目录
+  // 生成的API文件输出目录（生成器内部使用的前缀，保留不变即可）
   apiPrefix: 'api/generated',
 
-  // 项目名称
-  projectName: 'cheese-ai-api',
+  // 项目名称（同时作为输出目录名）。将其固定为 'api'，生成到 src/api 下
+  projectName: 'api',
 
   // 按标签分组生成文件
   organization: 'tags',
