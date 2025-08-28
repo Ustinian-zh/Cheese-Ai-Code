@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/pages/HomeView.vue'
 import HomePage from '@/pages/HomePage.vue'
 import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
@@ -15,13 +14,10 @@ const router = createRouter({
     {
       path: '/',
       name: '主页',
-      component: HomeView,
-    },
-    {
-      path: '/apps',
-      name: '应用广场',
       component: HomePage,
     },
+    // 可选：保留 /apps 作为别名，兼容历史链接
+    { path: '/apps', redirect: { name: '主页' } },
     {
       path: '/user/login',
       name: '用户登录',

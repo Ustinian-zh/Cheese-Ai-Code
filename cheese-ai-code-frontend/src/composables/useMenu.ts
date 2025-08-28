@@ -21,11 +21,6 @@ export function useMenu() {
       title: '主页',
     },
     {
-      key: '应用广场',
-      label: '应用广场',
-      title: '应用广场',
-    },
-    {
       key: '用户管理',
       label: '用户管理',
       title: '用户管理',

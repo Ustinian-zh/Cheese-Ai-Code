@@ -5,10 +5,28 @@ import { useLocale } from '@/composables/useLocale'
 
 // 初始化国际化
 const { antdLocale } = useLocale()
+
+// 全局主题（橙色主色，圆角 8，不改尺寸）
+const theme = {
+  token: {
+    colorPrimary: '#ff8c42',
+    colorInfo: '#ff8c42',
+    colorLink: '#ff8c42',
+    colorLinkHover: '#f57c00',
+    colorLinkActive: '#e56a00',
+    borderRadius: 8,
+  },
+  components: {
+    Button: {
+      colorPrimaryHover: '#f57c00',
+      colorPrimaryActive: '#e56a00',
+    },
+  },
+}
 </script>
 
 <template>
-  <ConfigProvider :locale="antdLocale">
+  <ConfigProvider :locale="antdLocale" :theme="theme">
     <BasicLayout />
   </ConfigProvider>
 </template>
@@ -52,5 +70,30 @@ a:hover {
 /* 清除默认的 Ant Design 样式影响 */
 .ant-layout {
   background: transparent;
+}
+
+/* 方案 1：主按钮橙色轻渐变，hover 稍深；不改尺寸 */
+:root {}
+.ant-btn-primary {
+  background: linear-gradient(135deg, #ff9d5f 0%, #ff8c42 60%, #f57c00 100%);
+  border: none;
+}
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background: linear-gradient(135deg, #ff933f 0%, #f57c00 60%, #e56a00 100%);
+}
+.ant-btn-primary:active {
+  background: linear-gradient(135deg, #f57c00 0%, #e56a00 60%, #cf5f00 100%);
+}
+
+/* 默认按钮浅灰边框，圆角随 token */
+.ant-btn-default {
+  border-color: #e5e7eb;
+  color: #334155;
+}
+.ant-btn-default:hover,
+.ant-btn-default:focus {
+  border-color: #d1d5db;
+  color: #1f2937;
 }
 </style>

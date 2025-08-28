@@ -6,12 +6,12 @@
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">应用详情</a-button>
-        <a-button type="primary" @click="deployApp" :loading="deploying">部署按钮</a-button>
+        <a-button type="primary" @click="deployApp" :loading="deploying">一键部署</a-button>
       </div>
     </div>
 
     <div class="main-content">
-      <div class="chat-section">
+      <div class="chat-section" ref="chatSection">
         <div class="messages-container" ref="messagesContainer">
           <div v-if="hasMoreHistory" class="load-more-container">
             <a-button type="link" @click="loadMoreHistory" :loading="loadingHistory" size="small">加载更多历史消息</a-button>
@@ -121,6 +121,7 @@ const messages = ref<Message[]>([])
 const userInput = ref('')
 const isGenerating = ref(false)
 const messagesContainer = ref<HTMLElement | null>(null)
+const chatSection = ref<HTMLElement | null>(null)
 // 对话历史游标与加载控制
 const loadingHistory = ref(false)
 const hasMoreHistory = ref(false)
@@ -305,8 +306,9 @@ const updatePreview = () => {
 }
 
 const scrollToBottom = () => {
-  if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  const scroller = chatSection.value || messagesContainer.value
+  if (scroller) {
+    scroller.scrollTop = scroller.scrollHeight
   }
 }
 
@@ -355,17 +357,17 @@ export default {
 <style scoped>
 #appChatPage { height: 100%; display: flex; flex-direction: column; padding: 16px; background: #fdfdfd; }
 .header-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.app-name { margin: 0; font-size: 18px; font-weight: 600; color: #1a1a1a; }
+.header-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.app-name { margin: 0; font-size: 18px; font-weight: 600; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .header-right { display: flex; gap: 12px; }
 .main-content { flex: 1; display: flex; gap: 16px; padding: 8px; overflow: hidden; }
-.chat-section { flex: 2; display: flex; flex-direction: column; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+.chat-section { flex: 2; display: flex; flex-direction: column; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); height: 700px; overflow: auto; }
 .messages-container { flex: 1; padding: 16px; overflow-y: auto; scroll-behavior: smooth; }
 .load-more-container { text-align: center; padding: 8px 0; margin-bottom: 8px; }
 .message-item { margin-bottom: 12px; }
 .user-message { display: flex; justify-content: flex-end; align-items: flex-start; gap: 8px; }
 .ai-message { display: flex; justify-content: flex-start; align-items: flex-start; gap: 8px; }
-.message-content { max-width: 70%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; word-wrap: break-word; }
+.message-content { max-width: 83%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; word-wrap: break-word; }
 .user-message .message-content { background: #1890ff; color: white; }
 .ai-message .message-content { background: #f5f5f5; color: #1a1a1a; padding: 8px 12px; }
 .message-avatar { flex-shrink: 0; }

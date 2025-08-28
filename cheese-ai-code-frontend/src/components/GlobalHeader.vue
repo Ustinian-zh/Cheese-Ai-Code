@@ -99,7 +99,7 @@ watch(() => route.name, () => {
 }
 
 .header-content {
-  max-width: 1200px;
+  max-width: 1450px;
   margin: 0 auto;
   display: flex;
   align-items: center;

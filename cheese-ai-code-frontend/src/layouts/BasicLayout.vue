@@ -40,7 +40,7 @@ useCheeseClick()
 }
 
 .content-wrapper {
-  max-width: 1200px;
+  max-width: 1450px;
   margin: 0 auto;
   padding: 24px;
   width: 100%;

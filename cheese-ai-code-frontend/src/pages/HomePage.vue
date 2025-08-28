@@ -111,7 +111,7 @@ onMounted(() => {
   <div id="homePage">
     <div class="container">
       <div class="hero-section">
-        <h1 class="hero-title">AI 应用生成平台</h1>
+        <h1 class="hero-title">奶酪应用工坊</h1>
         <p class="hero-description">一句话轻松创建网站应用</p>
       </div>
 
@@ -184,7 +184,7 @@ onMounted(() => {
 }
 .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .hero-section { text-align: center; padding: 60px 0 40px; margin-bottom: 20px; color: #1e293b; }
-.hero-title { font-size: 40px; font-weight: 700; margin: 0 0 12px; background: linear-gradient(135deg,#3b82f6 0%,#8b5cf6 50%,#10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero-title { font-size: 40px; font-weight: 700; line-height: 1.2; letter-spacing: .5px; margin: 0 0 12px; font-family: "HarmonyOS Sans SC","MiSans","SF Pro Display","PingFang SC","Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif; background: linear-gradient(135deg,#ffb36a 0%, #ff8c42 60%, #e56a00 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 2px 8px rgba(229, 106, 0, 0.18), 0 0 12px rgba(255, 140, 66, 0.15); -webkit-text-stroke: 0.5px rgba(255, 255, 255, 0.25); }
 .hero-description { font-size: 16px; color: #64748b; margin: 0; }
 .input-section { position: relative; margin: 0 auto 24px; max-width: 800px; }
 .prompt-input { border-radius: 12px; font-size: 16px; padding: 16px 56px 16px 16px; }
