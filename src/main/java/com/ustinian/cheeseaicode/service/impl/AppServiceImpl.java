@@ -9,6 +9,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.ustinian.cheeseaicode.constant.AppConstant;
 import com.ustinian.cheeseaicode.core.AiCodeGeneratorFacade;
+import com.ustinian.cheeseaicode.core.handler.StreamHandlerExecutor;
 import com.ustinian.cheeseaicode.exception.BusinessException;
 import com.ustinian.cheeseaicode.exception.ErrorCode;
 import com.ustinian.cheeseaicode.exception.ThrowUtils;
@@ -49,6 +50,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Resource
     private ChatHistoryServiceImpl chatHistoryService;
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor ;
 
     /**
      * 实现获取应用详情加密后，逻辑为先详细后封装
@@ -176,30 +179,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 
 // 5. 通过校验后，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+// 6. 调用 AI 生成代码（流式）
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, decidedEnum, appId);
+// 7. 收集 AI 响应内容并在完成后记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser,  decidedEnum);
 
-// 6. 按决定的生成类型调用 AI 生成代码（流式）
-        Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, decidedEnum, appId);
-
-// 7. 收集AI响应内容并在完成后记录到对话历史
-        StringBuilder aiResponseBuilder = new StringBuilder();
-        return contentFlux
-                .map(chunk -> {
-                    // 收集AI响应内容
-                    aiResponseBuilder.append(chunk);
-                    return chunk;
-                })
-                .doOnComplete(() -> {
-                    // 流式响应完成后，添加AI消息到对话历史
-                    String aiResponse = aiResponseBuilder.toString();
-                    if (StrUtil.isNotBlank(aiResponse)) {
-                        chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                    }
-                })
-                .doOnError(error -> {
-                    // 如果AI回复失败，也要记录错误消息
-                    String errorMessage = "AI回复失败: " + error.getMessage();
-                    chatHistoryService.addChatMessage(appId, errorMessage, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
-                }); }
+    }
 
     /**
      * 网站应用部署
@@ -268,11 +253,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         String alnum = msg.replaceAll("[^a-z0-9\\u4e00-\\u9fa5]", "");
         boolean wantHtml = alnum.contains("html") || alnum.contains("单html") || alnum.contains("单页") || alnum.contains("单文件");
         boolean wantMulti = alnum.contains("多文件") || alnum.contains("多页") || alnum.contains("组件化") || alnum.contains("目录结构");
+        // Vue 工程关键词：出现这些词且未明显指向 HTML/多文件时，判定为 VUE_PROJECT
+        boolean wantVue = alnum.contains("vue") || alnum.contains("vite") || alnum.contains("工程")
+                || alnum.contains("项目") || alnum.contains("路由") || alnum.contains("pinia")
+                || alnum.contains("antdesignvue") || alnum.contains("antdv") || alnum.contains("组件库");
         if (wantHtml && !wantMulti) {
             return CodeGenTypeEnum.HTML;
         }
         if (wantMulti && !wantHtml) {
             return CodeGenTypeEnum.MULTI_FILE;
+        }
+        if (wantVue && !wantHtml && !wantMulti) {
+            return CodeGenTypeEnum.VUE_PROJECT;
         }
         return current;
     }

@@ -72,8 +72,8 @@ public class AppController {
         /**
          * 自行改动
          */
-        // 默认生成类型：多文件。后续会在首次生成时根据用户意图自动更新为 "html" 或 "multi_file"。
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
+        // 默认生成类型：Vue 工程模式。后续仍可在首次生成时按用户意图自动调整
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 插入数据库
         boolean result = appService.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);

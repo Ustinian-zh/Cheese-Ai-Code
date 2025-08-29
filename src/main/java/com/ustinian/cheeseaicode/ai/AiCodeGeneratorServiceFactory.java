@@ -13,8 +13,10 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,9 +35,18 @@ public class AiCodeGeneratorServiceFactory {
     private RedisChatMemoryStore redisChatMemoryStore;
     @Resource
     private ChatHistoryService chatHistoryService;
+    // OpenAI 兼容的流式模型
+    // 说明：容器里名为 "openAiStreamingChatModel" 的 Bean 实际类型是 OpenAiStreamingChatModel。
+    // 如果字段类型写成 StreamingChatModel，会出现 BeanNotOfRequiredTypeException（类型不兼容）。
+    // 因此这里使用“具体类型”并配合 @Qualifier 精确注入该 Bean。
     @Resource
-    private StreamingChatModel openAiStreamingChatModel;
+    @Qualifier("openAiStreamingChatModel")
+    private OpenAiStreamingChatModel openAiStreamingChatModel;
+
+    // 推理流式模型（我们自定义配置产生）。
+    // 保持接口类型，通过 @Qualifier 指定注入的 Bean 名称，避免与自动装配的其它同类 Bean 冲突。
     @Resource
+    @Qualifier("reasoningStreamingChatModel")
     private StreamingChatModel reasoningStreamingChatModel;
 
 
