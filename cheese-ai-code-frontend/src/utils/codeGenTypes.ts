@@ -5,6 +5,7 @@
 export enum CodeGenTypeEnum {
   HTML = 'html',
   MULTI_FILE = 'multi_file',
+  VUE_PROJECT = 'vue_project',
 }
 
 export const CODE_GEN_TYPE_CONFIG = {
@@ -15,6 +16,10 @@ export const CODE_GEN_TYPE_CONFIG = {
   [CodeGenTypeEnum.MULTI_FILE]: {
     label: '原生多文件模式',
     value: CodeGenTypeEnum.MULTI_FILE,
+  },
+  [CodeGenTypeEnum.VUE_PROJECT]: {
+    label: 'Vue 项目模式',
+    value: CodeGenTypeEnum.VUE_PROJECT,
   },
 } as const
 
@@ -49,9 +54,19 @@ export const normalizeCodeGenType = (type: string | undefined | null): string | 
   ) {
     return CodeGenTypeEnum.MULTI_FILE
   }
+  // 广义匹配：Vue 工程相关关键词
+  if (
+    alnum.includes('vue') ||
+    alnum.includes('vite') ||
+    alnum.includes('vueproject') ||
+    alnum.includes('vueengineer')
+  ) {
+    return CodeGenTypeEnum.VUE_PROJECT
+  }
   // 兼容枚举常量名
   if (raw === 'HTML') return CodeGenTypeEnum.HTML
   if (raw === 'MULTI_FILE') return CodeGenTypeEnum.MULTI_FILE
+  if (raw === 'VUE_PROJECT') return CodeGenTypeEnum.VUE_PROJECT
   return lower
 }
 

@@ -24,7 +24,12 @@ export const getDeployUrl = (deployKey: string) => {
 
 // 获取静态预览 URL（未部署时使用 codeGenType 和 appId 组合）
 export const getStaticPreviewUrl = (codeGenType: string, appId: string | number) => {
-  return `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
+  const baseUrl = `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
+  // Vue 工程模式：浏览地址需要添加 dist/index.html
+  if (String(codeGenType).toLowerCase() === 'vue_project') {
+    return `${baseUrl}dist/index.html`
+  }
+  return baseUrl
 }
 
 
