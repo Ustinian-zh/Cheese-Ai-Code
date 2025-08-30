@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.ustinian.cheeseaicode.ai.AiCodeGenTypeRoutingService;
 import com.ustinian.cheeseaicode.constant.AppConstant;
 import com.ustinian.cheeseaicode.core.AiCodeGeneratorFacade;
 import com.ustinian.cheeseaicode.core.builder.VueProjectBuilder;
@@ -15,6 +16,7 @@ import com.ustinian.cheeseaicode.exception.BusinessException;
 import com.ustinian.cheeseaicode.exception.ErrorCode;
 import com.ustinian.cheeseaicode.exception.ThrowUtils;
 import com.ustinian.cheeseaicode.mapper.AppMapper;
+import com.ustinian.cheeseaicode.model.dto.app.AppAddRequest;
 import com.ustinian.cheeseaicode.model.dto.app.AppQueryRequest;
 import com.ustinian.cheeseaicode.model.entity.App;
 import com.ustinian.cheeseaicode.model.entity.User;
@@ -58,6 +60,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private ScreenshotService screenshotService;
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+
+
+
 
     /**
      * 实现获取应用详情加密后，逻辑为先详细后封装
@@ -166,32 +173,48 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
 //        }
 //        // 5. 调用 AI 生成代码
 //        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-// 4. 决定本次生成应使用的代码生成类型（支持从用户消息中识别“单 HTML / 多文件”意图）
-        CodeGenTypeEnum currentEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
-        if (currentEnum == null) {
-            currentEnum = CodeGenTypeEnum.MULTI_FILE; // 安全兜底
-        }
-        CodeGenTypeEnum decidedEnum = decideCodeGenTypeFromMessage(message, currentEnum);
-
-// 若识别的类型与数据库不一致，回写数据库，确保后续展示 / 部署一致
-        if (!decidedEnum.getValue().equals(app.getCodeGenType())) {
-            App update = new App();
-            update.setId(appId);
-            update.setCodeGenType(decidedEnum.getValue());
-            update.setEditTime(LocalDateTime.now());
-            boolean updated = this.updateById(update);
-            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用生成类型失败");
+        // 4. 获取应用的代码生成类型（固定，按 DB 存储，不再根据提示词调整）
+        String codeGenTypeStr = app.getCodeGenType();
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
+        if (codeGenTypeEnum == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         }
 
-// 5. 通过校验后，添加用户消息到对话历史
+        // 5. 通过校验后，添加用户消息到对话历史
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
-// 6. 调用 AI 生成代码（流式）
-        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, decidedEnum, appId);
-// 7. 收集 AI 响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser,  decidedEnum);
+        // 6. 调用 AI 生成代码（流式）
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 7. 收集 AI 响应内容并在完成后记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
 
     }
 
+    /**
+     * 创建应用
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
+    }
     /**
      * 网站应用部署
      * @param appId
@@ -282,35 +305,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
         });
     }
-    /**
-     * 根据用户输入的自然语言判定生成类型。
-     * - 命中“单 html / 单页 / 单文件”等关键词 → HTML
-     * - 命中“多文件 / 多页 / 组件 / 目录结构”等关键词 → MULTI_FILE
-     * - 否则沿用当前类型
-     */
-    private CodeGenTypeEnum decideCodeGenTypeFromMessage(String userMessage, CodeGenTypeEnum current) {
-        if (StrUtil.isBlank(userMessage)) {
-            return current;
-        }
-        String msg = userMessage.toLowerCase();
-        String alnum = msg.replaceAll("[^a-z0-9\\u4e00-\\u9fa5]", "");
-        boolean wantHtml = alnum.contains("html") || alnum.contains("单html") || alnum.contains("单页") || alnum.contains("单文件");
-        boolean wantMulti = alnum.contains("多文件") || alnum.contains("多页") || alnum.contains("组件化") || alnum.contains("目录结构");
-        // Vue 工程关键词：出现这些词且未明显指向 HTML/多文件时，判定为 VUE_PROJECT
-        boolean wantVue = alnum.contains("vue") || alnum.contains("vite") || alnum.contains("工程")
-                || alnum.contains("项目") || alnum.contains("路由") || alnum.contains("pinia")
-                || alnum.contains("antdesignvue") || alnum.contains("antdv") || alnum.contains("组件库");
-        if (wantHtml && !wantMulti) {
-            return CodeGenTypeEnum.HTML;
-        }
-        if (wantMulti && !wantHtml) {
-            return CodeGenTypeEnum.MULTI_FILE;
-        }
-        if (wantVue && !wantHtml && !wantMulti) {
-            return CodeGenTypeEnum.VUE_PROJECT;
-        }
-        return current;
-    }
+    // 删除：基于提示词的本地判别逻辑，改为统一按 DB 类型生成
     /**
      * 删除应用时关联删除对话历史
      *重写removebyid

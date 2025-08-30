@@ -3,6 +3,9 @@
     <div class="header-bar">
       <div class="header-left">
         <h1 class="app-name">{{ appInfo?.appName || '网站生成器' }}</h1>
+        <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
+          {{ formatCodeGenType(appInfo.codeGenType) }}
+        </a-tag>
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">应用详情</a-button>
@@ -109,7 +112,7 @@ import { DownloadOutlined } from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getAppVoById, deployApp as deployAppApi, deleteApp as deleteAppApi } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
-import { CodeGenTypeEnum } from '@/utils/codeGenTypes'
+import { CodeGenTypeEnum, formatCodeGenType } from '@/utils/codeGenTypes'
 import request from '@/request'
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
@@ -463,6 +466,7 @@ export default {
 .preview-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; }
 .preview-loading p { margin-top: 16px; }
 .preview-iframe { width: 100%; height: 100%; border: none; }
+.code-gen-type-tag { font-size: 12px; }
 @media (max-width: 1024px) { .main-content { flex-direction: column; } .chat-section, .preview-section { flex: none; height: 50vh; } }
 @media (max-width: 768px) { .header-bar { padding: 12px 16px; } .app-name { font-size: 16px; } .main-content { padding: 8px; gap: 8px; } .message-content { max-width: 85%; } }
 </style>

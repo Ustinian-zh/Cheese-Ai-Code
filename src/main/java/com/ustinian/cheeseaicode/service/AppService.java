@@ -2,6 +2,7 @@ package com.ustinian.cheeseaicode.service;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.ustinian.cheeseaicode.model.dto.app.AppAddRequest;
 import com.ustinian.cheeseaicode.model.dto.app.AppQueryRequest;
 import com.ustinian.cheeseaicode.model.entity.App;
 import com.ustinian.cheeseaicode.model.entity.User;
@@ -60,4 +61,12 @@ public interface AppService extends IService<App> {
      * @param appUrl
      */
     void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    /**
+     *创建应用
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 }
