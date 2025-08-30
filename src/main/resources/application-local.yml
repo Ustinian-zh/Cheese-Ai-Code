@@ -24,3 +24,11 @@ langchain4j:
       # response-format: json_object
       log-requests: true
       log-responses: true
+      # 添加 COS 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: https://REDACTED_COS_HOST
+    secretId: REDACTED_SECRET_ID
+    secretKey: REDACTED_SECRET_KEY
+    region: ap-shanghai
+    bucket: cheese-ai-1312851737
