@@ -2,32 +2,12 @@
 /* eslint-disable */
 import request from '@/request'
 
-/** 按应用游标查询对话历史（后端返回按 createTime 降序） */
-export async function listAppChatHistory(
-  params: {
-    appId: string | number
-    pageSize?: number
-    lastCreateTime?: string
-  },
-  options?: { [key: string]: any }
-) {
-  const { appId, pageSize, lastCreateTime } = params
-  return request<API.BaseResponsePageChatHistory>(`/chatHistory/app/${appId}` as any, {
-    method: 'GET',
-    params: {
-      pageSize,
-      lastCreateTime,
-    },
-    ...(options || {}),
-  })
-}
-
-/** 管理员分页查询所有对话历史 */
+/** 此处后端没有提供注释 POST /chatHistory/admin/list/page/vo */
 export async function listAllChatHistoryByPageForAdmin(
   body: API.ChatHistoryQueryRequest,
   options?: { [key: string]: any }
 ) {
-  return request<API.BaseResponsePageChatHistory>('/chatHistory/admin/list/page/vo', {
+  return request<API.BaseResponsePageChatHistory>(`/chatHistory/admin/list/page/vo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -37,5 +17,20 @@ export async function listAllChatHistoryByPageForAdmin(
   })
 }
 
-
-
+/** 此处后端没有提供注释 GET /chatHistory/app/${param0} */
+export async function listAppChatHistory(
+  // 叠加生成的Param类型 (非body参数swagger默认没有生成对象)
+  params: API.listAppChatHistoryParams,
+  options?: { [key: string]: any }
+) {
+  const { appId: param0, ...queryParams } = params
+  return request<API.BaseResponsePageChatHistory>(`/chatHistory/app/${param0}`, {
+    method: 'GET',
+    params: {
+      // pageSize has a default value: 10
+      pageSize: '10',
+      ...queryParams,
+    },
+    ...(options || {}),
+  })
+}

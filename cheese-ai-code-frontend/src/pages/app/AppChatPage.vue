@@ -6,6 +6,17 @@
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">应用详情</a-button>
+        <a-button
+          type="primary"
+          @click="downloadCode"
+          :loading="downloading"
+          :disabled="!isOwner"
+        >
+          <template #icon>
+            <DownloadOutlined />
+          </template>
+          下载代码
+        </a-button>
         <a-button type="primary" @click="deployApp" :loading="deploying">一键部署</a-button>
       </div>
     </div>
@@ -94,6 +105,7 @@
 import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { DownloadOutlined } from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { getAppVoById, deployApp as deployAppApi, deleteApp as deleteAppApi } from '@/api/appController'
 import { listAppChatHistory } from '@/api/chatHistoryController'
@@ -134,6 +146,8 @@ const previewReady = ref(false)
 const deploying = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
+// 下载相关
+const downloading = ref(false)
 
 const isOwner = computed(() => String(appInfo.value?.userId ?? '') === String(loginUserStore.loginUser.id ?? ''))
 const isAdmin = computed(() => loginUserStore.loginUser.userRole === 'admin')
@@ -342,6 +356,69 @@ const deleteApp = async () => {
     if (res.data.code === 0) { message.success('删除成功'); appDetailVisible.value = false; router.push('/') }
     else { message.error('删除失败：' + res.data.message) }
   } catch (e) { message.error('删除失败') }
+}
+
+// 下载代码
+const downloadCode = async () => {
+  if (!appId.value) {
+    message.error('应用ID不存在')
+    return
+  }
+  downloading.value = true
+  try {
+    const baseURL = request.defaults.baseURL || API_BASE_URL || ''
+    // 规范化 appId，避免意外的花括号/符号导致 404
+    const idStr = String(appId.value).trim()
+    const normalizedId = (idStr.match(/\d+/)?.[0]) || ''
+    if (!normalizedId) {
+      message.error('应用ID无效')
+      return
+    }
+    const url = `${baseURL}/app/download/${normalizedId}`
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/zip,application/json;q=0.9,*/*;q=0.8' },
+    })
+    if (!response.ok) {
+      if (response.status === 401) {
+        message.warning('请先登录')
+        const redirect = encodeURIComponent(window.location.href)
+        router.push(`/user/login?redirect=${redirect}`)
+        return
+      }
+      const contentType = response.headers.get('content-type') || ''
+      let errorMsg = `下载失败: ${response.status}`
+      try {
+        if (contentType.includes('application/json')) {
+          const data = await response.json()
+          errorMsg = (data && (data.message || data.description)) || errorMsg
+        } else {
+          const text = await response.text()
+          if (text) errorMsg = text
+        }
+      } catch {}
+      throw new Error(errorMsg)
+    }
+    const contentDisposition = response.headers.get('content-disposition') || response.headers.get('Content-Disposition')
+    const fileNameMatch = contentDisposition?.match(/filename="(.+)"/)
+    const fileName = fileNameMatch?.[1] || `app-${appId.value}.zip`
+    const blob = await response.blob()
+    const downloadUrl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = downloadUrl
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(downloadUrl)
+    message.success('代码下载成功')
+  } catch (error) {
+    console.error('下载失败：', error)
+    message.error('下载失败，请重试')
+  } finally {
+    downloading.value = false
+  }
 }
 
 onMounted(() => { fetchAppInfo() })
