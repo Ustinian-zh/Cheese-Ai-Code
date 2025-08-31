@@ -20,7 +20,7 @@
           </template>
           下载代码
         </a-button>
-        <a-button type="primary" @click="deployApp" :loading="deploying">一键部署</a-button>
+        <a-button type="primary" @click="deployApp" :loading="deploying" :disabled="isGenerating">一键部署</a-button>
       </div>
     </div>
 
@@ -52,17 +52,46 @@
           </div>
         </div>
 
+        <!-- 选中元素信息展示（可关闭） -->
+        <a-alert
+          v-if="selectedElementInfo"
+          class="selected-element-alert"
+          type="info"
+          closable
+          @close="clearSelectedElement"
+        >
+          <template #message>
+            <div class="selected-element-info">
+              <div class="element-header">
+                <span class="element-tag">选中元素：{{ selectedElementInfo.tagName.toLowerCase() }}</span>
+                <span v-if="selectedElementInfo.id" class="element-id">#{{ selectedElementInfo.id }}</span>
+                <span v-if="selectedElementInfo.className" class="element-class">.{{ selectedElementInfo.className.split(' ').join('.') }}</span>
+              </div>
+              <div class="element-details">
+                <div v-if="selectedElementInfo.textContent" class="element-item">
+                  内容: {{ selectedElementInfo.textContent.substring(0, 50) }}{{ selectedElementInfo.textContent.length > 50 ? '...' : '' }}
+                </div>
+                <div v-if="selectedElementInfo.pagePath" class="element-item">页面路径: {{ selectedElementInfo.pagePath }}</div>
+                <div class="element-item">选择器: <code class="element-selector-code">{{ selectedElementInfo.selector }}</code></div>
+              </div>
+            </div>
+          </template>
+        </a-alert>
+
         <div class="input-container">
           <div class="input-wrapper">
             <a-textarea
               v-model:value="userInput"
-              placeholder="请描述你想生成的网站，越详细效果越好哦"
+              :placeholder="getInputPlaceholder()"
               :rows="4"
               :maxlength="1000"
               @keydown.enter.prevent="sendMessage"
               :disabled="isGenerating || !isOwner"
             />
             <div class="input-actions">
+              <a-button type="default" style="margin-right: 8px" @click="toggleEditMode" :danger="isEditMode" :disabled="!previewUrl">
+                {{ isEditMode ? '退出编辑' : '编辑模式' }}
+              </a-button>
               <a-button type="primary" @click="sendMessage" :loading="isGenerating" :disabled="!isOwner">
                 发送
               </a-button>
@@ -119,6 +148,7 @@ import AppDetailModal from '@/components/AppDetailModal.vue'
 import DeploySuccessModal from '@/components/DeploySuccessModal.vue'
 import aiAvatar from '@/assets/aiAvatar.png'
 import { API_BASE_URL, getStaticPreviewUrl } from '@/config/env'
+import { VisualEditor, type ElementInfo } from '@/utils/visualEditor'
 
 const route = useRoute()
 const router = useRouter()
@@ -146,6 +176,15 @@ const historyLoaded = ref(false)
 const previewUrl = ref('')
 const previewReady = ref(false)
 
+// 可视化编辑相关
+const isEditMode = ref(false)
+const selectedElementInfo = ref<ElementInfo | null>(null)
+const visualEditor = new VisualEditor({
+  onElementSelected: (elementInfo: ElementInfo) => {
+    selectedElementInfo.value = elementInfo
+  },
+})
+
 const deploying = ref(false)
 const deployModalVisible = ref(false)
 const deployUrl = ref('')
@@ -159,15 +198,22 @@ const appDetailVisible = ref(false)
 const showAppDetail = () => { appDetailVisible.value = true }
 
 const fetchAppInfo = async () => {
-  const id = route.params.id as string
-  if (!id) {
+  const idRaw = route.params.id as string
+  if (!idRaw) {
     message.error('应用ID不存在')
     router.push('/')
     return
   }
+  // 更稳健的 ID 解析，避免意外字符导致后端参数校验失败
+  const id = (String(idRaw).match(/\d+/)?.[0] || '')
   appId.value = id
   try {
-    const res = await getAppVoById({ id } as any)
+    // 不要将超大 ID 转为 Number，避免精度丢失；保持字符串并断言类型
+    const res = await getAppVoById({ id: id as unknown as number })
+    if (import.meta.env.DEV) {
+      // 仅开发模式打印，便于定位“获取应用信息失败”
+      console.debug('[AppChat] getAppVoById', { id, res: res.data })
+    }
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
       // 先加载对话历史
@@ -201,9 +247,25 @@ const sendInitialMessage = async (prompt: string) => {
 
 const sendMessage = async () => {
   if (!userInput.value.trim() || isGenerating.value) return
-  const messageText = userInput.value.trim()
+  let messageText = userInput.value.trim()
+  if (selectedElementInfo.value) {
+    let elementContext = `\n\n选中元素信息：`
+    if (selectedElementInfo.value.pagePath) {
+      elementContext += `\n- 页面路径: ${selectedElementInfo.value.pagePath}`
+    }
+    elementContext += `\n- 标签: ${selectedElementInfo.value.tagName.toLowerCase()}\n- 选择器: ${selectedElementInfo.value.selector}`
+    if (selectedElementInfo.value.textContent) {
+      elementContext += `\n- 当前内容: ${selectedElementInfo.value.textContent.substring(0, 100)}`
+    }
+    messageText += elementContext
+  }
   userInput.value = ''
   messages.value.push({ type: 'user', content: messageText } as Message)
+  // 发送后清理选择和编辑状态
+  if (selectedElementInfo.value) {
+    clearSelectedElement()
+    if (isEditMode.value) toggleEditMode()
+  }
   const aiMessageIndex = messages.value.length
   messages.value.push({ type: 'ai', content: '', loading: true } as Message)
   await nextTick(); scrollToBottom()
@@ -267,8 +329,9 @@ const loadChatHistory = async (isLoadMore = false) => {
   if (!appId.value || loadingHistory.value) return
   loadingHistory.value = true
   try {
-    const params: { appId: string; pageSize: number; lastCreateTime?: string } = {
-      appId: appId.value,
+    // 依旧以字符串形式传递 appId，避免精度丢失
+    const params: API.listAppChatHistoryParams = {
+      appId: appId.value as unknown as number,
       pageSize: 10,
     }
     if (isLoadMore && lastCreateTime.value) {
@@ -279,7 +342,7 @@ const loadChatHistory = async (isLoadMore = false) => {
     const chatHistories = pageData?.records ?? []
     if (chatHistories.length > 0) {
       const historyMessages: Message[] = chatHistories
-        .map((chat: any) => ({
+        .map((chat: API.ChatHistory) => ({
           type: (chat.messageType === 'user' ? 'user' : 'ai') as 'user' | 'ai',
           content: chat.message || '',
         }))
@@ -316,7 +379,10 @@ const handleError = (error: unknown, aiMessageIndex: number) => {
 const updatePreview = () => {
   if (appId.value) {
     const codeGenType = appInfo.value?.codeGenType || CodeGenTypeEnum.HTML
-    const newPreviewUrl = getStaticPreviewUrl(codeGenType, appId.value)
+    const base = getStaticPreviewUrl(codeGenType, appId.value)
+    const ts = Date.now()
+    const sep = base.includes('?') ? '&' : '?'
+    const newPreviewUrl = `${base}${sep}v=${ts}`
     previewUrl.value = newPreviewUrl
     previewReady.value = true
   }
@@ -333,7 +399,8 @@ const deployApp = async () => {
   if (!appId.value) { message.error('应用ID不存在'); return }
   deploying.value = true
   try {
-    const res = await deployAppApi({ appId: appId.value as any })
+    // 保持字符串，避免超大 ID 精度丢失
+    const res = await deployAppApi({ appId: appId.value as unknown as number })
     if (res.data.code === 0 && res.data.data) {
       deployUrl.value = res.data.data
       deployModalVisible.value = true
@@ -349,13 +416,44 @@ const deployApp = async () => {
 }
 
 const openInNewTab = () => { if (previewUrl.value) window.open(previewUrl.value, '_blank') }
-const onIframeLoad = () => { previewReady.value = true }
+const onIframeLoad = () => {
+  previewReady.value = true
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (iframe) {
+    visualEditor.init(iframe)
+    visualEditor.onIframeLoad()
+  }
+}
+
+// 可视化编辑相关函数
+const toggleEditMode = () => {
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (!iframe || !previewReady.value) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  const next = visualEditor.toggleEditMode()
+  isEditMode.value = next
+}
+
+const clearSelectedElement = () => {
+  selectedElementInfo.value = null
+  visualEditor.clearSelection()
+}
+
+const getInputPlaceholder = () => {
+  if (selectedElementInfo.value) {
+    return `正在编辑 ${selectedElementInfo.value.tagName.toLowerCase()} 元素，描述您想要的修改...`
+  }
+  return '请描述你想生成的网站，越详细效果越好哦'
+}
 
 const editApp = () => { if (appInfo.value?.id) router.push(`/app/edit/${appInfo.value.id}`) }
 const deleteApp = async () => {
   if (!appInfo.value?.id) return
   try {
-    const res = await deleteAppApi({ id: appInfo.value.id as any })
+    // 保持字符串，避免超大 ID 精度丢失
+    const res = await deleteAppApi({ id: appInfo.value.id as unknown as number })
     if (res.data.code === 0) { message.success('删除成功'); appDetailVisible.value = false; router.push('/') }
     else { message.error('删除失败：' + res.data.message) }
   } catch (e) { message.error('删除失败') }
@@ -424,7 +522,22 @@ const downloadCode = async () => {
   }
 }
 
-onMounted(() => { fetchAppInfo() })
+onMounted(() => {
+  fetchAppInfo()
+  window.addEventListener('message', (event) => {
+    // 新协议
+    if (event.origin === window.location.origin && event.data && event.data.type === 'element-selected') {
+      const info = event.data?.payload?.data
+      if (info) {
+        // 与工具类一致的字段名
+        selectedElementInfo.value = info
+      }
+      return
+    }
+    // 旧协议
+    visualEditor.handleIframeMessage(event)
+  })
+})
 onUnmounted(() => {})
 </script>
 
