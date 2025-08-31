@@ -89,9 +89,6 @@
               :disabled="isGenerating || !isOwner"
             />
             <div class="input-actions">
-              <a-button type="default" style="margin-right: 8px" @click="toggleEditMode" :danger="isEditMode" :disabled="!previewUrl">
-                {{ isEditMode ? '退出编辑' : '编辑模式' }}
-              </a-button>
               <a-button type="primary" @click="sendMessage" :loading="isGenerating" :disabled="!isOwner">
                 发送
               </a-button>
@@ -104,6 +101,9 @@
         <div class="preview-header">
           <h3>生成后的网页展示</h3>
           <div class="preview-actions">
+            <a-button v-if="previewUrl" type="default" @click="toggleEditMode" :danger="isEditMode">
+              {{ isEditMode ? '退出编辑' : '编辑模式' }}
+            </a-button>
             <a-button v-if="previewUrl" type="link" @click="openInNewTab">新窗口打开</a-button>
           </div>
         </div>
