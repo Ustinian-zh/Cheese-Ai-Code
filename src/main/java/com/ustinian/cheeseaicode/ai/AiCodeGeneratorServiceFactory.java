@@ -2,7 +2,7 @@ package com.ustinian.cheeseaicode.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.ustinian.cheeseaicode.ai.tools.FileWriteTool;
+import com.ustinian.cheeseaicode.ai.tools.*;
 import com.ustinian.cheeseaicode.exception.BusinessException;
 import com.ustinian.cheeseaicode.exception.ErrorCode;
 import com.ustinian.cheeseaicode.model.enums.CodeGenTypeEnum;
@@ -12,8 +12,8 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.service.AiServices;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,6 +35,8 @@ public class AiCodeGeneratorServiceFactory {
     private RedisChatMemoryStore redisChatMemoryStore;
     @Resource
     private ChatHistoryService chatHistoryService;
+    @Resource
+    private ToolManager toolManager;
     // OpenAI 兼容的流式模型
     // 说明：容器里名为 "openAiStreamingChatModel" 的 Bean 实际类型是 OpenAiStreamingChatModel。
     // 如果字段类型写成 StreamingChatModel，会出现 BeanNotOfRequiredTypeException（类型不兼容）。
@@ -146,10 +148,8 @@ public class AiCodeGeneratorServiceFactory {
             // Vue 项目生成使用推理模型
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .streamingChatModel(reasoningStreamingChatModel)
-                    //根据不同的对话id 提供不同的对话记忆
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
-                    //处理工具调用幻觉问题
+                    .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
