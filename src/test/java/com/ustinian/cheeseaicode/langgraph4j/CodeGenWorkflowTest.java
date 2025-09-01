@@ -43,4 +43,12 @@ class CodeGenWorkflowTest {
         System.out.println("生成的代码目录: " + result.getGeneratedCodeDir());
         System.out.println("构建结果目录: " + result.getBuildResultDir());
     }
+
+    @Test
+    void createWorkflow() {
+    }
+
+    @Test
+    void executeWorkflow() {
+    }
 }

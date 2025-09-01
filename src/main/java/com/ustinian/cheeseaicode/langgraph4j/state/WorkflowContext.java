@@ -1,6 +1,7 @@
 package com.ustinian.cheeseaicode.langgraph4j.state;
 
 import com.ustinian.cheeseaicode.langgraph4j.model.ImageResource;
+import com.ustinian.cheeseaicode.langgraph4j.model.QualityResult;
 import com.ustinian.cheeseaicode.model.enums.CodeGenTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -72,8 +73,15 @@ public class WorkflowContext implements Serializable {
      */
     private String errorMessage;
 
+    /**
+     * 质量检查结果
+     */
+    private QualityResult qualityResult;
+
+
     @Serial
     private static final long serialVersionUID = 1L;
+
 
     // ========== 上下文操作方法 ==========
 
