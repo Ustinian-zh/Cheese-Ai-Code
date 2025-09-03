@@ -2,28 +2,52 @@ package com.ustinian.cheeseaicode.langgraph4j.ai;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * 代码质量检查服务工厂
  */
 @Slf4j
 @Configuration
-public class CodeQualityCheckServiceFactory {
+public class CodeQualityCheckServiceFactory implements ApplicationContextAware {
 
-    @Resource
-    private ChatModel chatModel;
+    private ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
+
+    // 使用多例Bean避免依赖自动配置
+    // @Resource(name = "chatModel")
+    // private ChatModel chatModel;
 
     /**
      * 创建代码质量检查 AI 服务
      */
-    @Bean
+    /**
+     * 创建代码质量检查服务实例（工厂方法，每次调用创建新实例）
+     */
     public CodeQualityCheckService createCodeQualityCheckService() {
+        // 每次获取新的多例Bean实例
+        ChatModel chatModel = applicationContext.getBean("routingChatModelPrototype", ChatModel.class);
         return AiServices.builder(CodeQualityCheckService.class)
                 .chatModel(chatModel)
                 .build();
+    }
+
+    /**
+     * 默认提供一个Bean（用于依赖注入）
+     */
+    @Bean
+    @Lazy
+    public CodeQualityCheckService codeQualityCheckService() {
+        return createCodeQualityCheckService();
     }
 }

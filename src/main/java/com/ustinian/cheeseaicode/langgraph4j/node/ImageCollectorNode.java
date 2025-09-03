@@ -1,6 +1,7 @@
 package com.ustinian.cheeseaicode.langgraph4j.node;
 
 import com.ustinian.cheeseaicode.langgraph4j.ai.ImageCollectionPlanService;
+import com.ustinian.cheeseaicode.langgraph4j.ai.ImageCollectionPlanServiceFactory;
 import com.ustinian.cheeseaicode.langgraph4j.model.ImageCollectionPlan;
 import com.ustinian.cheeseaicode.langgraph4j.model.ImageResource;
 import com.ustinian.cheeseaicode.langgraph4j.state.WorkflowContext;
@@ -33,8 +34,9 @@ public class ImageCollectorNode {
             List<ImageResource> collectedImages = new ArrayList<>();
 
             try {
-                // 第一步：获取图片收集计划
-                ImageCollectionPlanService planService = SpringContextUtil.getBean(ImageCollectionPlanService.class);
+                // 第一步：获取图片收集计划（使用工厂创建新实例）
+                ImageCollectionPlanServiceFactory planFactory = SpringContextUtil.getBean(ImageCollectionPlanServiceFactory.class);
+                ImageCollectionPlanService planService = planFactory.createImageCollectionPlanService();
                 ImageCollectionPlan plan = planService.planImageCollection(originalPrompt);
                 log.info("获取到图片收集计划，开始并发执行");
 

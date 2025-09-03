@@ -1,17 +1,20 @@
 package com.ustinian.cheeseaicode.config;
 
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
+/**
+ * 这个注解是读取配置文件中的配置信息，并创建一个用于路由判断的ChatModel
+ */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.routing-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class RoutingAiModelConfig {
 
     private String baseUrl;
 
@@ -27,13 +30,16 @@ public class ReasoningStreamingChatModelConfig {
 
     private Boolean logResponses = false;
 
+    /**
+     * 创建用于路由判断的ChatModel
+     */
     @Bean
     @Scope("prototype")
-    public StreamingChatModel reasoningStreamingChatModelPrototype() {
-        return OpenAiStreamingChatModel.builder()
+    public ChatModel routingChatModelPrototype() {
+        return OpenAiChatModel.builder()
                 .apiKey(apiKey)
-                .baseUrl(baseUrl)
                 .modelName(modelName)
+                .baseUrl(baseUrl)
                 .maxTokens(maxTokens)
                 .temperature(temperature)
                 .logRequests(logRequests)

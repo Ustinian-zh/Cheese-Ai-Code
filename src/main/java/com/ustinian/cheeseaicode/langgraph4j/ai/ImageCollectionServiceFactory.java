@@ -8,18 +8,26 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 /**
  * 图片收集服务工厂
  */
 @Slf4j
 @Configuration
-public class ImageCollectionServiceFactory {
+public class ImageCollectionServiceFactory implements ApplicationContextAware {
 
-    @Resource
-    private ChatModel chatModel;
+    private ApplicationContext applicationContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 
     @Resource
     private ImageSearchTool imageSearchTool;
@@ -37,9 +45,12 @@ public class ImageCollectionServiceFactory {
      * 创建图片收集 AI 服务
      */
     @Bean
+    @Lazy
     public ImageCollectionService createImageCollectionService() {
+        // 使用多例Bean避免依赖自动配置
+        ChatModel routingChatModel = applicationContext.getBean("routingChatModelPrototype", ChatModel.class);
         return AiServices.builder(ImageCollectionService.class)
-                .chatModel(chatModel)
+                .chatModel(routingChatModel)
                 .tools(
                         imageSearchTool,
                         undrawIllustrationTool,

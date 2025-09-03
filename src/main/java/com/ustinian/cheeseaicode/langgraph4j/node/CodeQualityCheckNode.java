@@ -3,6 +3,7 @@ package com.ustinian.cheeseaicode.langgraph4j.node;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.ustinian.cheeseaicode.langgraph4j.ai.CodeQualityCheckService;
+import com.ustinian.cheeseaicode.langgraph4j.ai.CodeQualityCheckServiceFactory;
 import com.ustinian.cheeseaicode.langgraph4j.model.QualityResult;
 import com.ustinian.cheeseaicode.langgraph4j.state.WorkflowContext;
 import com.ustinian.cheeseaicode.utils.SpringContextUtil;
@@ -46,7 +47,9 @@ public class CodeQualityCheckNode {
                             .build();
                 } else {
                     // 2. 调用 AI 进行代码质量检查
-                    CodeQualityCheckService qualityCheckService = SpringContextUtil.getBean(CodeQualityCheckService.class);
+                    // 使用工厂创建新的服务实例（多例模式）
+                    CodeQualityCheckServiceFactory qualityFactory = SpringContextUtil.getBean(CodeQualityCheckServiceFactory.class);
+                    CodeQualityCheckService qualityCheckService = qualityFactory.createCodeQualityCheckService();
                     qualityResult = qualityCheckService.checkCodeQuality(codeContent);
                     log.info("代码质量检查完成 - 是否通过: {}", qualityResult.getIsValid());
                 }

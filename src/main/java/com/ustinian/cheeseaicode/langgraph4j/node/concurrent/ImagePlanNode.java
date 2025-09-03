@@ -1,6 +1,7 @@
 package com.ustinian.cheeseaicode.langgraph4j.node.concurrent;
 
 import com.ustinian.cheeseaicode.langgraph4j.ai.ImageCollectionPlanService;
+import com.ustinian.cheeseaicode.langgraph4j.ai.ImageCollectionPlanServiceFactory;
 import com.ustinian.cheeseaicode.langgraph4j.model.ImageCollectionPlan;
 import com.ustinian.cheeseaicode.langgraph4j.state.WorkflowContext;
 import com.ustinian.cheeseaicode.utils.SpringContextUtil;
@@ -22,7 +23,9 @@ public class ImagePlanNode {
             String originalPrompt = context.getOriginalPrompt();
             try {
                 // 获取图片收集计划服务
-                ImageCollectionPlanService planService = SpringContextUtil.getBean(ImageCollectionPlanService.class);
+                // 使用工厂创建新的服务实例（多例模式）
+                ImageCollectionPlanServiceFactory planFactory = SpringContextUtil.getBean(ImageCollectionPlanServiceFactory.class);
+                ImageCollectionPlanService planService = planFactory.createImageCollectionPlanService();
                 ImageCollectionPlan plan = planService.planImageCollection(originalPrompt);
                 log.info("生成图片收集计划，准备启动并发分支");
                 // 将计划存储到上下文中
