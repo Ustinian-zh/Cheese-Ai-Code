@@ -1,0 +1,5 @@
+### 清理应用缓存接口示例
+POST http://localhost:8123/api/app/cache/clear
+Content-Type: application/json
+
+# 注意：这个接口需要管理员权限，请先登录管理员账号

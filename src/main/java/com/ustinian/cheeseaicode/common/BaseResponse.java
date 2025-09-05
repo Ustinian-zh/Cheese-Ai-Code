@@ -8,6 +8,10 @@ import java.io.Serializable;
 @Data
 public class BaseResponse<T> implements Serializable {
 
+    // 无参构造器，用于反序列化
+    public BaseResponse() {
+    }
+
     private int code;
 
     private T data;

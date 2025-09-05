@@ -22,9 +22,11 @@ import com.ustinian.cheeseaicode.model.vo.AppVO;
 import com.ustinian.cheeseaicode.service.AppService;
 import com.ustinian.cheeseaicode.service.ProjectDownloadService;
 import com.ustinian.cheeseaicode.service.UserService;
+import com.ustinian.cheeseaicode.utils.CacheUtils;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
@@ -53,6 +55,8 @@ public class AppController {
     private ProjectDownloadService projectDownloadService;
     @Resource
     private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    @Resource
+    private CacheUtils cacheUtils;
 
     /**
      * 下载应用代码
@@ -206,7 +210,13 @@ public class AppController {
      * @param appQueryRequest 查询请求
      * @return 精选应用列表
      */
+
     @PostMapping("/good/list/page/vo")
+    @Cacheable(
+            value = "good_app_page",
+            key = "T(com.ustinian.cheeseaicode.utils.CacheKeyUtils).generateKey(#appQueryRequest)",
+            condition = "#appQueryRequest.pageNum <= 10"
+    )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         // 限制每页最多 20 个
@@ -433,4 +443,18 @@ public class AppController {
 //        return appService.page(page);
 //    }
 ////endregion
+
+    /**
+     * 清理应用缓存（临时方法，用于解决序列化问题）
+     */
+    @PostMapping("/cache/clear")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<?> clearAppCache() {
+        try {
+            cacheUtils.clearCache("good_app_page");
+            return ResultUtils.success("缓存清理成功");
+        } catch (Exception e) {
+            return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "缓存清理失败: " + e.getMessage());
+        }
+    }
 }

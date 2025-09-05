@@ -1,0 +1,14 @@
+# Redis直接清理缓存命令
+
+# 方法1：清理特定缓存
+redis-cli
+KEYS good_app_page*
+DEL good_app_page::*
+
+# 方法2：清理所有缓存（谨慎使用）
+redis-cli
+FLUSHDB
+
+# 方法3：查看当前缓存键
+redis-cli
+KEYS *
