@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.ustinian.cheeseaicode.ai.tools.ToolManager;
 import com.ustinian.cheeseaicode.exception.BusinessException;
 import com.ustinian.cheeseaicode.exception.ErrorCode;
+import com.ustinian.cheeseaicode.guardrail.PromptSafetyInputGuardrail;
 import com.ustinian.cheeseaicode.model.enums.CodeGenTypeEnum;
 import com.ustinian.cheeseaicode.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -12,12 +13,10 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +24,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @Slf4j
@@ -129,8 +129,11 @@ public class AiCodeGeneratorServiceFactory implements ApplicationContextAware {
                         .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                                 toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                         ))
+                        .inputGuardrails(List.of(new PromptSafetyInputGuardrail()))  // 添加输入护轨
+//                        .outputGuardrails(new RetryOutputGuardrail())流式输出不支持输出护轨
                         .build();
             }
+            //    @InputGuardrails({ FirstInputGuardrail.class, SecondInputGuardrail.class })给方法加护轨
             case HTML, MULTI_FILE -> {
                 // 使用多例模式的 ChatModel 和 StreamingChatModel 解决并发问题
                 ChatModel chatModel = applicationContext.getBean("routingChatModelPrototype", ChatModel.class);
@@ -139,6 +142,8 @@ public class AiCodeGeneratorServiceFactory implements ApplicationContextAware {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+//                        .outputGuardrails(new RetryOutputGuardrail())为了流式输出
                         .build();
             }
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,

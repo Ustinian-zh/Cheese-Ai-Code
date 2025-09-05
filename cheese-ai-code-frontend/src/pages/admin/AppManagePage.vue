@@ -80,7 +80,7 @@ const columns = [
   { title: 'ID', dataIndex: 'id', width: 80, fixed: 'left' },
   { title: '应用名称', dataIndex: 'appName', width: 150 },
   { title: '封面', dataIndex: 'cover', width: 100 },
-  { title: '初始提示词', dataIndex: 'initPrompt', width: 200 },
+  { title: '初始提示词', dataIndex: 'initPrompt', width: 300 },
   { title: '生成类型', dataIndex: 'codeGenType', width: 100 },
   { title: '优先级', dataIndex: 'priority', width: 80 },
   { title: '部署时间', dataIndex: 'deployedTime', width: 160 },
@@ -158,7 +158,14 @@ const deleteApp = async (id: number | undefined) => {
 <style scoped>
 #appManagePage { padding: 24px; background: white; margin-top: 16px; }
 .no-cover { width: 80px; height: 60px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; color: #999; font-size: 12px; border-radius: 4px; }
-.prompt-text { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prompt-text { 
+  max-width: 300px; 
+  word-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  line-height: 1.4;
+  cursor: pointer;
+}
 .text-gray { color: #999; }
 .featured-btn { background: #faad14; border-color: #faad14; color: white; }
 .featured-btn:hover { background: #d48806; border-color: #d48806; }

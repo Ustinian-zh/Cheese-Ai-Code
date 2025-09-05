@@ -133,10 +133,10 @@ onMounted(() => {
       </div>
 
       <div class="quick-actions">
-        <a-button type="default" @click="setPrompt('创建一个现代化的个人博客网站...')">个人博客网站</a-button>
-        <a-button type="default" @click="setPrompt('设计一个专业的企业官网...')">企业官网</a-button>
-        <a-button type="default" @click="setPrompt('构建一个功能完整的在线商城...')">在线商城</a-button>
-        <a-button type="default" @click="setPrompt('制作一个精美的作品展示网站...')">作品展示网站</a-button>
+        <a-button type="default" @click="setPrompt('创建一个现代化的个人博客网站，包含文章列表、文章详情、分类标签、搜索功能、评论系统和个人简介页面。采用响应式设计，支持深色/浅色主题切换，具有优雅的排版和流畅的动画效果。')">个人博客网站</a-button>
+        <a-button type="default" @click="setPrompt('设计一个专业的企业官网，包含首页轮播、公司介绍、产品展示、新闻资讯、联系我们等页面。采用商务风格设计，突出企业形象和品牌价值，支持多语言切换，具备SEO优化和移动端适配。')">企业官网</a-button>
+        <a-button type="default" @click="setPrompt('构建一个功能完整的在线商城，包含商品展示、购物车、用户登录注册、订单管理、支付流程等功能。采用现代电商设计风格，支持商品筛选、搜索、收藏，具有良好的用户体验和购物流程。')">在线商城</a-button>
+        <a-button type="default" @click="setPrompt('制作一个精美的作品展示网站，包含作品集展示、项目详情、技能介绍、个人经历和联系方式。采用创意设计风格，突出视觉效果，支持图片懒加载、瀑布流布局和作品分类筛选功能。')">作品展示网站</a-button>
       </div>
 
       <div class="section">
