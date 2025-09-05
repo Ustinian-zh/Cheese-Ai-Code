@@ -19,6 +19,8 @@ import com.ustinian.cheeseaicode.model.dto.app.*;
 import com.ustinian.cheeseaicode.model.entity.App;
 import com.ustinian.cheeseaicode.model.entity.User;
 import com.ustinian.cheeseaicode.model.vo.AppVO;
+import com.ustinian.cheeseaicode.ratelimiter.annotation.RateLimit;
+import com.ustinian.cheeseaicode.ratelimiter.enums.RateLimitType;
 import com.ustinian.cheeseaicode.service.AppService;
 import com.ustinian.cheeseaicode.service.ProjectDownloadService;
 import com.ustinian.cheeseaicode.service.UserService;
@@ -137,6 +139,8 @@ public class AppController {
         app.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        // 更新成功后清理相关缓存（因为可能修改了优先级等影响精选应用列表的字段）
+        cacheUtils.forceClearCache("good_app_page");
         return ResultUtils.success(true);
     }
     /**
@@ -161,6 +165,10 @@ public class AppController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = appService.removeById(id);
+        // 删除成功后清理相关缓存
+        if (result) {
+            cacheUtils.forceClearCache("good_app_page");
+        }
         return ResultUtils.success(result);
     }
     /**
@@ -251,6 +259,10 @@ public class AppController {
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
         boolean result = appService.removeById(id);
+        // 删除成功后清理相关缓存
+        if (result) {
+            cacheUtils.forceClearCache("good_app_page");
+        }
         return ResultUtils.success(result);
     }
     /**
@@ -323,6 +335,7 @@ public class AppController {
      */
 
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        HttpServletRequest request) {
@@ -451,7 +464,7 @@ public class AppController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<?> clearAppCache() {
         try {
-            cacheUtils.clearCache("good_app_page");
+            cacheUtils.forceClearCache("good_app_page");
             return ResultUtils.success("缓存清理成功");
         } catch (Exception e) {
             return ResultUtils.error(ErrorCode.SYSTEM_ERROR, "缓存清理失败: " + e.getMessage());

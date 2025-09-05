@@ -3,7 +3,10 @@ package com.ustinian.cheeseaicode.utils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
 
 /**
  * 缓存工具类
@@ -17,6 +20,9 @@ public class CacheUtils {
     @Resource
     private CacheManager cacheManager;
 
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
     /**
      * 清理指定缓存
      *
@@ -28,9 +34,33 @@ public class CacheUtils {
             if (cache != null) {
                 cache.clear();
                 log.info("成功清理缓存: {}", cacheName);
+            } else {
+                log.warn("缓存不存在: {}", cacheName);
             }
         } catch (Exception e) {
             log.error("清理缓存失败: {}, 错误: {}", cacheName, e.getMessage());
+        }
+    }
+
+    /**
+     * 强力清理指定缓存（直接操作Redis，清理所有匹配的key）
+     */
+    public void forceClearCache(String cacheName) {
+        try {
+            // 先尝试Spring Cache的清理
+            clearCache(cacheName);
+            
+            // 再直接操作Redis清理所有匹配的key
+            String pattern = cacheName + "::*";
+            Set<String> keys = redisTemplate.keys(pattern);
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.info("强力清理缓存成功: {} (清理了 {} 个key)", cacheName, keys.size());
+            } else {
+                log.info("没有找到匹配的缓存key: {}", pattern);
+            }
+        } catch (Exception e) {
+            log.error("强力清理缓存失败: {}, 错误: {}", cacheName, e.getMessage());
         }
     }
 
