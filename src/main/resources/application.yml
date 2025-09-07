@@ -23,7 +23,7 @@ spring:
     password: 5201314WZH
  #主配置文件中激活本地配置
   profiles:
-    active: local
+    active: prod
   # 开启 DevTools，但排除 langchain4j 包参与热重启，避免类加载器冲突
   devtools:
     restart:

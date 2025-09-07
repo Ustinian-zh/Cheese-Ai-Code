@@ -59,6 +59,12 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Bean Validation 支持 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
 <!--        hutool工具库-->
         <dependency>
             <groupId>cn.hutool</groupId>
@@ -157,6 +163,13 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>3.50.0</version>
+            <!-- 排除 SLF4J Simple 实现，避免冲突 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 
@@ -185,12 +198,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+
                 </configuration>
             </plugin>
         </plugins>
